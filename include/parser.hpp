@@ -24,7 +24,7 @@ private:
 	{
 		Token token;
 		vector<string> args;
-		ASTNode* body = nullptr;
+		ExprNode* body = nullptr;
 
 		bool invalid = true;
 	} Target;
@@ -51,14 +51,14 @@ private:
 	bool check_target(string name);
 	void synchronize();
 
-	ASTNode* assignment();
-	ASTNode* expression();
-		ASTNode* equality();
-		ASTNode* comparison();
-		ASTNode* term();
-		ASTNode* factor();
-		ASTNode* unary();
-		ASTNode* primary();
+	void assignment();
+	ExprNode* expression();
+		ExprNode* equality();
+		ExprNode* comparison();
+		ExprNode* term();
+		ExprNode* factor();
+		ExprNode* unary();
+		ExprNode* primary();
 			NumberNode* literal();
 			VariableNode* variable();
 			CallNode* call();
@@ -69,7 +69,6 @@ private:
 	Token _current;
 	Token _previous;
 
-	AST* _astree;
 	map<string, Target> _targets;
 
 	bool _had_error;

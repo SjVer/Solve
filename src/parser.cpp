@@ -138,91 +138,92 @@ void Parser::synchronize()
 
 // ===================== expressions ====================
 
-ASTNode* Parser::assignment()
+void Parser::assignment()
 {
+	Target target = consume_target();
+	if(target.invalid && !consume(TOKEN_EQUAL, "Expected assignment.")) return;
 	
-	CONSUME_OR_RET_NULL(TOKEN_EQUAL, "Expected assignment.");
+	ExprNode* body = expression();
 
 
-
-	return expr;
+	consume_terminator();
 }
 
-ASTNode* Parser::expression()
+ExprNode* Parser::expression()
 {
 	return equality();
 }
 
-ASTNode* Parser::equality()
+ExprNode* Parser::equality()
 {
-	ASTNode* expr = comparison();
+	ExprNode* expr = comparison();
 
 	while(match(TOKEN_SLASH_EQUAL) || match(TOKEN_EQUAL_EQUAL))
 	{
 		Token tok = _previous;
-		ASTNode* right = comparison();
+		ExprNode* right = comparison();
 		expr = new BinaryNode(tok, tok.type, expr, right);
 	}
 
 	return expr;
 }
 
-ASTNode* Parser::comparison()
+ExprNode* Parser::comparison()
 {
-	ASTNode* expr = term();
+	ExprNode* expr = term();
 
 	while(match(TOKEN_GREATER) || match(TOKEN_GREATER_EQUAL)
 	   || match(TOKEN_LESS)    || match(TOKEN_LESS_EQUAL))
 	{
 		Token tok = _previous;
-		ASTNode* right = term();
+		ExprNode* right = term();
 		expr = new BinaryNode(tok, tok.type, expr, right);
 	}
 
 	return expr;
 }
 
-ASTNode* Parser::term()
+ExprNode* Parser::term()
 {
-	ASTNode* expr = factor();
+	ExprNode* expr = factor();
 	
 	while(match(TOKEN_PLUS) || match(TOKEN_MINUS))
 	{
 		Token tok = _previous;
-		ASTNode* right = factor();
+		ExprNode* right = factor();
 		expr = new BinaryNode(tok, tok.type, expr, right);
 	}
 
 	return expr;
 }
 
-ASTNode* Parser::factor()
+ExprNode* Parser::factor()
 {
-	ASTNode* expr = unary();
+	ExprNode* expr = unary();
 	
 	while(match(TOKEN_STAR) || match(TOKEN_SLASH))
 	{
 		Token tok = _previous;
-		ASTNode* right = unary();
+		ExprNode* right = unary();
 		expr = new BinaryNode(tok, tok.type, expr, right);
 	}
 
 	return expr;
 }
 
-ASTNode* Parser::unary()
+ExprNode* Parser::unary()
 {
  	if(match(TOKEN_MINUS))
 	{
 		Token tok = _previous;
-		ASTNode* expr = unary();
+		ExprNode* expr = unary();
 		return new UnaryNode(tok, tok.type, expr);
 	}
 
 	return primary();
 }
 
-ASTNode* Parser::primary()
+ExprNode* Parser::primary()
 {
 	// literals
 	if(match(TOKEN_INTEGER) || match(TOKEN_FLOAT)) return literal();
@@ -231,7 +232,7 @@ ASTNode* Parser::primary()
 	else if(match(TOKEN_LEFT_PAREN))
 	{
 		Token tok = _previous;
-		ASTNode* expr = expression();
+		ExprNode* expr = expression();
 		CONSUME_OR_RET_NULL(TOKEN_RIGHT_PAREN, "Expected ')' after parenthesized expression.");
 		return new GroupingNode(tok, expr);
 	}
@@ -290,7 +291,7 @@ CallNode* Parser::call()
 
 	// if(!check_function(name)) error_at(&tok, "Function does not exist in current scope.");
 
-	vector<ASTNode*> args;
+	vector<ExprNode*> args;
 	// FuncProperties funcprops = get_function_props(name);
 	// int paramscount = funcprops.params.size();
 	
@@ -330,8 +331,7 @@ Status Parser::parse(string infile, CCP source, AST* astree)
 	advance();
 	while (!is_at_end())
 	{
-		_astree->push_back(expression());
-		consume_terminator();
+		assignment();
 		if(_panic_mode) synchronize();
 	}
 

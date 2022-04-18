@@ -32,102 +32,102 @@ class Visitor
 };
 
 // astnode class (visited by visitor)
-class ASTNode
+class ExprNode
 {
 	public:
-	ASTNode(Token token): _token(token) {}
+	ExprNode(Token token): _token(token) {}
 	Token _token;
 	virtual void accept(Visitor* v) = 0;
 };
 
 // abstract syntax tree
-typedef vector<ASTNode*> AST;
+typedef vector<ExprNode*> AST;
 
 // =================================================
 
 #pragma region nodes
 #define ACCEPT void accept(Visitor *v) { v->visit(this); }
 
-class AssignNode: public ASTNode
+class AssignNode: public ExprNode
 {
 	public:
 
-	AssignNode(Token token, ASTNode* target, ASTNode* expr):
-		ASTNode(token), _target(target), _expr(expr) {}
+	AssignNode(Token token, ExprNode* target, ExprNode* expr):
+		ExprNode(token), _target(target), _expr(expr) {}
 	ACCEPT
 
-	ASTNode* _target;
-	ASTNode* _expr;
+	ExprNode* _target;
+	ExprNode* _expr;
 };
 
-class BinaryNode: public ASTNode
+class BinaryNode: public ExprNode
 {
 	public:
 
-	BinaryNode(Token token, TokenType optype, ASTNode* left, ASTNode* right):
-		ASTNode(token), _optype(optype), _left(left), _right(right) {}
-	ACCEPT
-
-	TokenType _optype;
-	ASTNode* _left;
-	ASTNode* _right;
-};
-
-class UnaryNode: public ASTNode
-{
-	public:
-
-	UnaryNode(Token token, TokenType optype, ASTNode* expr):
-		ASTNode(token), _optype(optype), _expr(expr) {}
+	BinaryNode(Token token, TokenType optype, ExprNode* left, ExprNode* right):
+		ExprNode(token), _optype(optype), _left(left), _right(right) {}
 	ACCEPT
 
 	TokenType _optype;
-	ASTNode* _expr;
+	ExprNode* _left;
+	ExprNode* _right;
 };
 
-class GroupingNode: public ASTNode
+class UnaryNode: public ExprNode
 {
 	public:
 
-	GroupingNode(Token token, ASTNode* expr): 
-		ASTNode(token), _expr(expr) {}
+	UnaryNode(Token token, TokenType optype, ExprNode* expr):
+		ExprNode(token), _optype(optype), _expr(expr) {}
 	ACCEPT
 
-	ASTNode* _expr;
+	TokenType _optype;
+	ExprNode* _expr;
 };
 
-class NumberNode: public ASTNode
+class GroupingNode: public ExprNode
+{
+	public:
+
+	GroupingNode(Token token, ExprNode* expr): 
+		ExprNode(token), _expr(expr) {}
+	ACCEPT
+
+	ExprNode* _expr;
+};
+
+class NumberNode: public ExprNode
 {
 	public:
 
 	NumberNode(Token token, double value):
-		ASTNode(token), _value(value) {}
+		ExprNode(token), _value(value) {}
 	ACCEPT
 
 	double _value;
 };
 
-class VariableNode: public ASTNode
+class VariableNode: public ExprNode
 {
 	public:
 
 	VariableNode(Token token, string ident):
-		ASTNode(token), _ident(ident) {}
+		ExprNode(token), _ident(ident) {}
 	ACCEPT
 
 	string _ident;
 };
 
-class CallNode: public ASTNode
+class CallNode: public ExprNode
 {
 	public:
 
-	CallNode(Token token, string ident, vector<ASTNode*> args):
-		ASTNode(token), _ident(ident), _args(args) {}
+	CallNode(Token token, string ident, vector<ExprNode*> args):
+		ExprNode(token), _ident(ident), _args(args) {}
 	ACCEPT
 
 	string _ident;
-	vector<ASTNode*> _args;
+	vector<ExprNode*> _args;
 };
 
 #undef ACCEPT
