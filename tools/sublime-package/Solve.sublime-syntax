@@ -1,0 +1,440 @@
+%YAML 1.2
+
+---
+
+name: Evi
+file_extensions: [evi, evii, hevi]
+fileTypes: [evi]
+scope: source.evi
+
+variables:
+  ident: "[A-Za-z_][A-Za-z_0-9]*"
+
+  # numbers
+  decimal: '\b[0-9]+(\.[0-9]*)?\b'
+  binary: '\b0b[0-1]+\b'
+  octal: '\b0c[0-7]+\b'
+  hexadecimal: '\b0x[0-9a-fA-F]+\b'
+  number: '{{decimal}}|{{binary}}|{{octal}}|{{hexadecimal}}'
+
+  # types
+  inttype: '(?:u)?i(?:(?:128)|(?:16|32|64)|(?:4|8))|i1'
+  type: '(!\s*)?(?:{{inttype}}|flt|dbl|bln|nll|chr|sze)(?:\s*\*)*'
+
+contexts:
+  prototype:
+    - include: comments
+    - include: pre-directive
+    - include: macro-invoke
+
+  main:
+    # The main context is the initial starting point of our syntax.
+    # Include other contexts from here (or specify them directly).
+    - include: comments
+    - include: pre-directive
+    - include: macro-invoke
+    - include: declaration
+    - include: statement
+
+  type:
+    - match: \b{{type}}\b
+      scope: storage.type.evi
+
+  array:
+    - match: \[
+      scope: punctuation.section.brackets.begin.evi
+      push:
+      - meta_scope: meta.array-elements.evi
+      - match: \]
+        scope: punctuation.section.brackets.end.evi
+        pop: true
+      - include: comments
+      - include: expression
+      - include: invalids
+
+  size_of:
+    - match: (\?)\s*(?:(?:(\()\s*({{type}})\s*(\)))|({{type}}))
+      captures:
+        1: keyword.operator.size_of.evi
+        2: punctuation.separator.evi
+        3: storage.type.evi
+        5: punctuation.separator.evi
+        6: storage.type.evi
+        # 1: one
+        # 2: two
+        # 3: three
+        # 4: four
+        # 5: five
+        # 6: six
+        # 7: seven
+        # 8: eight
+
+  number:
+    - match: \b{{number}}\b
+      scope: constant.numeric.evi
+
+  string-char:
+    - match: '\"'
+      push:
+        - meta_scope: string.quoted.double
+        - match: '\"'
+          pop: true
+        - include: escaped-char
+        - include: format-specifier
+
+    - match: "'"
+      push:
+        - meta_scope: string.quoted.single
+        - match: "'"
+          pop: true
+        - include: escaped-char
+
+  operator:
+    - match: ->
+      scope: keyword.operator.cast.evi
+      push:
+        - meta_scope: keyword.operator.cast.type.evi
+        - match: '{{type}}'
+          scope: storage.type.evi
+          set:
+            - match: \**
+              scope: storage.type.evi
+              pop: true
+        - include: invalids
+    # - match: \.
+    #   scope: punctuation.accessor.dot.evi
+    - match: <<|>>
+      scope: keyword.operator.bitwise.shift.evi
+    - match: ==|/=
+      scope: keyword.operator.comparison.evi
+    # - match: \=
+    #   scope: keyword.operator.assignment.evi
+    - match: <=|>=|<>|<|>
+      scope: keyword.operator.relational.evi
+    - match: \!|&&|\|\||\?\?|:|\?|\^\^
+      scope: keyword.operator.logical.evi
+    - match: \&|\^|\|
+      scope: keyword.operator.bitwise.evi
+    - match: --
+      scope: keyword.operator.decrement.evi
+    - match: \+\+
+      scope: keyword.operator.increment.evi
+    - match: \*|/|-|\+
+      scope: keyword.operator.arithmetic.evi
+
+  subscript:
+    - match: \[
+      scope: punctuation.section.brackets.begin.evi
+      push:
+        - include: expression
+        - match: \]
+          scope: punctuation.section.brackets.end.evi
+          pop: true
+        - include: comments
+        - include: invalids
+
+  # EXPRESSION
+
+  expression:
+    - include: comments, pre-directive
+
+    - include: macro-invoke
+
+    - include: size_of
+    - include: call
+    - include: operator
+    - include: array
+    - include: number
+    - include: variable
+    - include: string-char
+
+    - include: subscript
+
+    - include: punctuation
+
+  macro-invoke:
+    - match: '\b{{ident}}#'
+      scope: entity.name.constant.preprocessor.evi
+
+  variable:
+    - match: '(\$)({{ident}})'
+      scope: meta.variable.evi
+    - match: '(\$)([0-9]+)'
+      scope: variable.parameter.evi
+
+  call:
+    - match: '({{ident}})\s*(\()'
+      captures:
+        1: variable.function.evi
+        2: punctuation.section.arguments.begin.evi
+      push:
+        - include: comments
+        - match: \)
+          scope: punctuation.section.arguments.end.evi
+          pop: true
+        - include: expression
+        - include: invalids
+
+  # STATEMENTS
+
+  statement:
+    - include: comments
+
+    - include: macro-invoke
+
+    - include: assignment
+    - include: return
+    - include: if_and_loop
+    - include: expression-stmt
+
+    - include: invalids
+
+  assignment:
+    - match: '(=)({{ident}})'
+      captures:
+        1: keyword.operator.assignment.evi
+        2: meta.assignment.target.evi
+      push:
+        - include: comments
+        - include: expression
+        - include: terminator
+        - include: invalids
+        # - match: =
+        #   scope: keyword.operator.assignment.evi
+        #   set:
+        #   - include: comments
+        #   - include: expression
+        #   - include: terminator
+        #   - include: invalids
+
+  return:
+    - match: \~
+      scope: keyword.control.flow.return.evi
+      push:
+        - include: comments
+        - include: expression
+        - include: terminator
+        - include: invalids
+
+  if_and_loop:
+    - match: \?\?
+      scope: keyword.control.flow.if.evi
+    - match: '::'
+      scope: keyword.control.flow.else.evi
+    - match: \!\!
+      scope: keyword.control.flow.loop.evi
+
+  declaration:
+    # variable
+    - match: '(\%)(\s*!)?\s*({{ident}})(?:\s*,\s*({{ident}}))*'
+      captures:
+        1: keyword.declaration.variable.evi,
+        2: storage.modifier.static.evi,
+        3: entity.name.variable.evi
+        4: entity.name.variable.evi
+      set:
+        - include: comments, pre-directive
+        - match: '{{type}}'
+          scope: storage.type.evi
+          set:
+            - meta_scope: meta.declaration.variable.initializer.evi
+            - include: comments, pre-directive
+            - include: expression
+            - include: terminator
+            - match: $\n?
+              pop: true
+          
+        - include: invalids
+        - match: $\n?
+          pop: true
+
+    # functions
+    - match: '(\@)(\s*!)?\s*({{ident}})'
+      captures:
+        1: keyword.declaration.function.evi
+        2: storage.modifier.static.evi
+        3: entity.name.function.evi
+      push:
+        - include: comments
+        - match: \s*({{type}})?\s*\(
+          captures:
+            1: storage.type.returntype.evi
+          push:
+            - include: comments
+            - meta_scope: meta.parameter_list.evi
+
+            - match: '{{type}}'
+              scope: variable.parameter.evi
+            - match: '\.\.\.'
+              scope: keyword.operator.variadic.evi
+
+            - match: \)
+              pop: true
+
+            - include: comments
+            - include: invalids
+          pop: true
+        - match: \S*
+          pop: true
+
+  expression-stmt:
+    - include: expression
+    - include: terminator
+
+  # MISC
+
+  punctuation:
+    - match: '\,|\(|\)|\{|\}'
+      scope: punctuation.separator.evi
+
+  invalids:
+    - match: \S
+      scope: meta.invalid.misplaced.evi
+
+  comments:
+    - match: '\\:'
+      scope: punctuation.definition.comment.evi
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.block.evi
+        - match: ':\\'
+          pop: true
+
+    - match: '\\\? (@param [0-9]+ |@return )'
+      scope: punctuation.definition.comment.documentation.evi
+      captures:
+        1: entity.name.constant.evi
+      push:
+        - meta_scope: comment.line.documentation.evi
+        - match: $\n?
+          pop: true
+
+    - match: '\\'
+      scope: punctuation.definition.comment.evi
+      push:
+        - meta_scope: comment.line.evi
+        - match: $\n?
+          pop: true
+
+  escaped-char:
+    # - match: \\(?:\\|[abefnrtv\'"?]|[0-3][0-9]{0,2}|[4-7][0-9]?|x[a-fA-F0-9]+|u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8})
+    - match: \\(?:a|b|e|f|n|r|t|v|\\|\'|\"|0)
+      scope: constant.character.escape.c
+    - match: \\.
+      scope: invalid.illegal.unknown-escape.c
+
+  format-specifier:
+      - match: |-
+          (?x)%
+            (\d+\$)?                                      # field (argument #)
+            [#0\- +']*                                    # flags
+            [,;:_]?                                       # separator character (AltiVec)
+            ((-?\d+)|\*(-?\d+\$)?)?                       # minimum field width
+            (\.((-?\d+)|\*(-?\d+\$)?)?)?                  # precision
+            (hh|h|ll|l|j|t|z|q|L|vh|vl|v|hv|hl)?          # length modifier
+            (\[[^\]]+\]|[am]s|[diouxXDOUeEfFgGaACcSspn%]) # conversion type
+        scope: constant.other.placeholder.evi
+
+  pre-directive:
+    - match: ^\s*#\s*apply\b
+      scope: keyword.preprocessor.apply.evi
+      push:
+        - include: pre-directive-end
+        - include: string-char
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+    - match: ^\s*#\s*(flag|unset|undef)\b
+      scope: keyword.preprocessor.flag.evi
+      push:
+        - include: pre-directive-end
+        - match: '[A-Za-z_]+[A-Za-z_0-9]*'
+          scope: entity.name.constant.preprocessor.evi
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+    - match: ^\s*#\s*line\b
+      scope: keyword.preprocessor.line.evi
+      push:
+        - include: pre-directive-end
+        - match: '[0-9]+'
+          scope: constant.numeric.decimal.evi
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+    - match: ^\s*#\s*file\b
+      scope: keyword.preprocessor.file.evi
+      push:
+        - include: pre-directive-end
+        - match: '\".*\"'
+          scope: string.quoted.double.evi
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+    - match: ^\s*#\s*macro\b
+      scope: keyword.preprocessor.macro.evi
+      push:
+        - include: pre-directive-end
+        - match: '{{ident}}'
+          scope: entity.name.constant.preprocessor.evi
+          push:
+            - meta_scope: meta.preprocessor.macro.evi
+            - include: pre-directive-end
+            - include: type
+            - include: statement
+            - include: expression
+
+        - include: invalids
+
+    - match: ^\s*#\s*(ifset|ifnset|ifdef|ifndef)\b
+      scope: keyword.preprocessor.conditional.evi
+      push:
+        - include: pre-directive-end
+        - match: '[A-Za-z_]+[A-Za-z_0-9]*'
+          scope: entity.name.constant.preprocessor.evi
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+    - match: ^\s*#\s*(else|endif)\b
+      scope: keyword.preprocessor.conditional.evi
+      push:
+        - include: pre-directive-end
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+    - match: ^\s*#\s*info\b
+      scope: keyword.preprocessor.pragma.evi
+      push:
+        - include: pre-directive-end
+        - include: string-char
+        - match: '[A-Za-z_0-9]+'
+          scope: meta.preprocessor.pragma.args.evi
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+    - match: ^\s*(#) ([0-9]+)\b
+      captures:
+        1: keyword.preprocessor.linemarker.evi
+        2: constant.numeric.decimal.evi
+      push:
+        - include: pre-directive-end
+        - include: string-char
+        - match: $\n?
+          pop: true
+        - include: invalids
+
+  pre-directive-end:
+    - match: (?=(?:\\|\\:))|(?<!\\)(?=\n)
+      pop: true
+
+  terminator:
+    - match: ';'
+      scope: punctuation.terminator.expression.evi
+      pop: true

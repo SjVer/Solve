@@ -1,0 +1,10 @@
+#pragma once
+
+#include <iostream>
+#include <cstring>
+#include <cctype>
+#include <cassert>
+#include <csignal>
+#include <sstream>
+#include <vector>
+#include <map>

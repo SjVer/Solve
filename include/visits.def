@@ -1,0 +1,7 @@
+VISIT(AssignNode);
+VISIT(BinaryNode);
+VISIT(UnaryNode);
+VISIT(GroupingNode);
+VISIT(NumberNode);
+VISIT(VariableNode);
+VISIT(CallNode);
