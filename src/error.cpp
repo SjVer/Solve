@@ -97,7 +97,8 @@ void ErrorDispatcher::__dispatch(CCP color, CCP prompt, CCP message)
 void ErrorDispatcher::__dispatch_at_token(CCP color, Token* token, CCP prompt, CCP message)
 {
 	fprintf(stderr, "[%s:%d] %s%s" COLOR_NONE ": %s\n",
-			token->file->c_str(), token->line, color, prompt, message);
+			token->file->c_str(),
+			token->line, color, prompt, message);
 }
 
 // if line == 0 lineno is omitted. likewise with filename

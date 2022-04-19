@@ -84,14 +84,41 @@ bool Parser::consume(TokenType type, string message)
 	return false;
 }
 
-bool Parser::consume_terminator()
+// bool Parser::consume_terminator()
+// {
+// 	if(match(TOKEN_NEWLINE) || is_at_end())
+// 	{
+// 		while(match(TOKEN_NEWLINE));
+// 		return true;
+// 	}
+// 	return false;
+// }
+
+Target Parser::consume_target()
 {
-	if(match(TOKEN_NEWLINE) || is_at_end())
+	Target target = Target();
+
+	if(!consume(TOKEN_IDENTIFIER, "Expected symbol name.")) return target;
+	target.name = PREV_TOKEN_STR;
+	target.token = _previous;
+
+	if(match(TOKEN_LEFT_PAREN)) // function
 	{
-		while(match(TOKEN_NEWLINE));
-		return true;
+		target.has_params = true;
+		target.params = vector<string>();
+
+		if(!check(TOKEN_RIGHT_PAREN)) do
+		{
+			consume(TOKEN_IDENTIFIER, "Expected parameter.");
+			// target.params.push_back(pair<string, Token>(PREV_TOKEN_STR, _previous));
+			target.params.push_back(PREV_TOKEN_STR);
+
+		} while(match(TOKEN_COMMA));
+
+		consume(TOKEN_RIGHT_PAREN, "Expected ')' after parameters.");
 	}
-	return false;
+	
+	return target;
 }
 
 // returns true and advances if the current token is of the given type
@@ -112,21 +139,67 @@ bool Parser::is_at_end()
 
 // ======================= state =======================
 
-void Parser::set_target(string name, Target target)
+void Parser::set_symbol(Symbol symbol)
 {
-	//
-	_targets[name] = target;
+	// find last symbol with same name and get its ID
+	for(auto s = _symbols.rbegin(); s != _symbols.rend(); s++)
+		if(s->target.name == symbol.target.name) { symbol.id = s->id + 1; break; }
+
+	_symbols.push_back(symbol);
+	_current_scope.symbols[symbol.target.name] = &_symbols.back();
+	// _current_scope.symbols[symbol.target.name] = symbol;
+
+	#ifdef DEBUG
+	string msg = "set symbol '" + symbol.get_ident() + '\'';
+	if(symbol.target.has_params)
+	{
+		msg += " (";
+		for(auto p: symbol.target.params) msg += p + (p != symbol.target.params.back() ? ", " : "");
+		msg += ')';
+	}
+	DEBUG_PRINT_F_MSG("%s", msg.c_str());
+	#endif
 }
 
-Parser::Target Parser::get_target(string name)
+Symbol* Parser::get_symbol(string name)
 {
-	if(_targets.find(name) != _targets.end()) return _targets.at(name);
-	else return {.invalid = true};
+	if(_current_scope.symbols.find(name) != _current_scope.symbols.end())
+		return _current_scope.symbols.at(name);
+
+	for (auto s = _scope_stack.rbegin(); s != _scope_stack.rend(); s++)
+		if (s->symbols.find(name) != s->symbols.end())
+			return s->symbols.at(name);
+
+	return nullptr;
 }
 
-bool Parser::check_target(string name)
+bool Parser::check_symbol(string name)
 {
-	return !get_target(name).invalid;
+	return get_symbol(name) != nullptr;
+	// return !get_symbol(name).invalid;
+}
+
+void Parser::scope_up()
+{
+	DEBUG_PRINT_MSG("scope up");
+	_scope_stack.push_back(_current_scope);
+	_current_scope = Scope{map<string, Symbol*>()};
+}
+
+void Parser::scope_down()
+{
+	DEBUG_PRINT_MSG("scope down");
+	for(auto s : _current_scope.symbols) DEBUG_PRINT_F_MSG("    dump %s -> %s", 
+		s.first.c_str(), s.second->get_ident().c_str());
+
+	_current_scope = _scope_stack[_scope_stack.size() - 1];
+	_scope_stack.pop_back();
+
+	for(auto s : _current_scope.symbols) DEBUG_PRINT_F_MSG("    kept %s -> %s", 
+		s.first.c_str(), s.second->get_ident().c_str());
+	for (auto s = _scope_stack.rbegin(); s != _scope_stack.rend(); s++)
+		for(auto ss : s->symbols) DEBUG_PRINT_F_MSG("    kept %s -> %s", 
+			ss.first.c_str(), ss.second->get_ident().c_str());
 }
 
 void Parser::synchronize()
@@ -140,13 +213,43 @@ void Parser::synchronize()
 
 void Parser::assignment()
 {
+	// get target
 	Target target = consume_target();
 	if(target.invalid && !consume(TOKEN_EQUAL, "Expected assignment.")) return;
-	
+
+	DEBUG_PRINT_NL();
+	DEBUG_PRINT_F_MSG("assigning '%s'", target.name.c_str());
+
+	// add arguments as symbols
+	scope_up();
+	if(target.has_params) for(auto p : target.params)
+	{
+		Target t{
+			.token = target.token,
+			.name = p,
+			.has_params = false,
+			.params = {},
+			.invalid = false,
+		};
+		set_symbol(Symbol{
+			.target = t,
+			.id = 0, // will be set by set_symbol()
+			.body = nullptr,
+			.invalid = false,
+		});
+	}
+
+	// get expression
 	ExprNode* body = expression();
+	scope_down();
 
-
-	consume_terminator();
+	DEBUG_PRINT_F_MSG("assigned '%s'", target.name.c_str());
+	set_symbol(Symbol{
+		.target = target,
+		.id = 0,
+		.body = body,
+		.invalid = target.invalid || !body
+	});
 }
 
 ExprNode* Parser::expression()
@@ -237,11 +340,12 @@ ExprNode* Parser::primary()
 		return new GroupingNode(tok, expr);
 	}
 
-	// variables
-	else if(match(TOKEN_IDENTIFIER) && !check(TOKEN_LEFT_PAREN)) return variable();
-
-	// calls
-	else if (match(TOKEN_IDENTIFIER) && check(TOKEN_LEFT_PAREN)) return call();
+	// variables and calls
+	else if(match(TOKEN_IDENTIFIER))
+	{
+		if(check(TOKEN_LEFT_PAREN)) return call();
+		else return variable();
+	}
 
 	error_at_current("Expected expression.");
 	return nullptr;
@@ -279,6 +383,7 @@ NumberNode* Parser::literal()
 
 VariableNode* Parser::variable()
 {
+	// TODO: check the variable's existence and whatnot
 	return new VariableNode(_previous, PREV_TOKEN_STR);
 }
 
@@ -289,38 +394,52 @@ CallNode* Parser::call()
 
 	CONSUME_OR_RET_NULL(TOKEN_LEFT_PAREN, "Expected '(' after identifier.");
 
-	// if(!check_function(name)) error_at(&tok, "Function does not exist in current scope.");
+	Symbol* symbol = get_symbol(name);
+	if(!symbol)
+	{
+		error_at(&tok, "Function does not exist.");
+		return nullptr;
+	}
+	if(!symbol->target.has_params)
+	{
+		HOLD_PANIC();
+		error_at(&tok, "Symbol is not a function.");
+		if(!PANIC_HELD) note_declaration("Symbol", name, &symbol->target.token);
+		return nullptr;
+	}
+	DEBUG_PRINT_F_MSG("callee: '%s.%u'", symbol->target.name.c_str(), symbol->id);
 
 	vector<ExprNode*> args;
-	// FuncProperties funcprops = get_function_props(name);
-	// int paramscount = funcprops.params.size();
+	int arity = symbol->target.params.size();
 	
 	if(!check(TOKEN_RIGHT_PAREN)) do args.push_back(expression()); while(match(TOKEN_COMMA));
 
-	// if(args.size() != paramscount)
-	// {
-	// 	HOLD_PANIC();
-	// 	error_at(&tok, tools::fstr("Expected %s%d argument%s, but %d were given.",
-	// 		funcprops.variadic ? "at least " : "", paramscount, paramscount == 1 ? "" : "s", args.size()));
-	// 	if(!PANIC_HELD) note_declaration("Function", name, &funcprops.token);
-	// 	return nullptr;
-	// }
+	if(args.size() != arity)
+	{
+		HOLD_PANIC();
+		error_at(&tok, tools::fstr("Expected %d argument%s, but %d were given.",
+			arity, arity == 1 ? "" : "s", args.size()));
+		if(!PANIC_HELD) note_declaration("Function", name, &symbol->target.token);
+		return nullptr;
+	}
 
 	CONSUME_OR_RET_NULL(TOKEN_RIGHT_PAREN, "Expected ')' after arguments.");
 
 	// return funcprops.invalid ? nullptr : new CallNode(tok, name, args, funcprops.ret_type, lexparams, paramscount);
-	return new CallNode(tok, name, args);
+	return new CallNode(tok, symbol->get_ident(), args);
 }
 
 // ======================= misc. =======================
 
-Status Parser::parse(string infile, CCP source, AST* astree)
+Status Parser::parse(string infile, CCP source, vector<Symbol>* symbols_dest)
 {
 	// print_tokens_from_src(source);
-	_astree = astree;
 
 	// set members
 	_scanner = Scanner(&infile, source);
+	_symbols = vector<Symbol>();
+	_scope_stack = vector<Scope>();
+	_current_scope = Scope{map<string, Symbol*>()};
 
 	_had_error = false;
 	_panic_mode = false;
@@ -336,5 +455,6 @@ Status Parser::parse(string infile, CCP source, AST* astree)
 	}
 
 	DEBUG_PRINT_MSG("Parsing complete!");
+	*symbols_dest = _symbols;
 	return _had_error ? STATUS_PARSE_ERROR : STATUS_SUCCESS;
 }

@@ -130,11 +130,8 @@ Token Scanner::number()
 
 Token Scanner::identifier()
 {
-	while(peek() == '\'') advance();
-
-	if(!isAlpha(peek())) return errorToken("Invalid identifier.");
-
 	while (isAlpha(peek()) || isDigit(peek())) advance();
+	while(peek() == '\'') advance();
 
 	return makeToken(TOKEN_IDENTIFIER);
 }

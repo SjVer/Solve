@@ -11,23 +11,40 @@ using namespace std;
 
 // ==== ============= ====
 
+typedef struct
+{
+	Token token;
+	string name;
+
+	bool has_params = false;
+	vector<string> params;
+
+	bool invalid = true;
+} Target;
+
+typedef struct
+{
+	Target target;
+	uint id = 0;
+	ExprNode* body = nullptr;
+	bool invalid = true;
+
+	string get_ident() { return target.name + '.' + to_string(id); }
+} Symbol;
+
+// ==== ============= ====
+
 class Parser
 {
 public:
-	Status parse(string infile, CCP source, AST* astree);
+	Status parse(string infile, CCP source, vector<Symbol>* symbols_dest);
 
 private:
 
-	// types
-
 	typedef struct
 	{
-		Token token;
-		vector<string> args;
-		ExprNode* body = nullptr;
-
-		bool invalid = true;
-	} Target;
+		map<string, Symbol*> symbols;
+	} Scope;
 
 	// methods
 
@@ -46,9 +63,11 @@ private:
 
 	#define CONSUME_OR_RET_NULL(type, msg) if(!consume(type, msg)) return nullptr;
 
-	void set_target(string name, Target target);
-	Target get_target(string name);
-	bool check_target(string name);
+	void set_symbol(Symbol symbol);
+	Symbol* get_symbol(string name);
+	bool check_symbol(string name);
+	void scope_up();
+	void scope_down();
 	void synchronize();
 
 	void assignment();
@@ -69,7 +88,9 @@ private:
 	Token _current;
 	Token _previous;
 
-	map<string, Target> _targets;
+	vector<Symbol> _symbols;
+	Scope _current_scope;
+	vector<Scope> _scope_stack;
 
 	bool _had_error;
 	bool _panic_mode;

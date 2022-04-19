@@ -75,12 +75,14 @@ More information at %s.\nBuild: %s %s on %s (%s)."
 #define DEBUG_PRINT_MSG(msg) cout << DEBUG_MARKER " " msg << endl;
 #define DEBUG_PRINT_F_MSG(format, ...) cout <<  tools::fstr( \
 	DEBUG_MARKER " " format, __VA_ARGS__) << endl
+#define DEBUG_PRINT_NL() { cout << endl; }
 #else
 #define DEBUG_MARKER {}
 #define DEBUG_PRINT_LINE() {}
 #define DEBUG_PRINT_VAR(value, formatspec) {}
 #define DEBUG_PRINT_MSG(msg) {}
 #define DEBUG_PRINT_F_MSG(format, ...) {}
+#define DEBUG_PRINT_NL() {}
 #endif
 
 #define ABORT(status) { cerr << tools::fstr("[solve] Aborted with code %d.\n", status); exit(status); }

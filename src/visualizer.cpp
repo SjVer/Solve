@@ -10,28 +10,43 @@
 #define CONNECT_NODES_LABELED(node1, node2, label) (_stream << \
 	tools::fstr("\tnode%d -> node%d [label=" #label ", fontsize=10, fontname=\"Courier\"]\n", node1, node2))
 
-void ASTVisualizer::visualize(string path, AST* astree)
+void ASTVisualizer::init()
 {
 	_stream = stringstream();
-	_nodecount = 1;
+	_nodecount = 0;
 
 	_stream << HEADER;
+}
 
-	for(auto& node : *astree)
+void ASTVisualizer::visualize(string path, Symbol* symbol)
+{
+	if(!symbol->body) return;
+
+	_path = path;
+
+	// generate name
+	string name = symbol->get_ident();
+	if(symbol->target.has_params)
 	{
-		// node id will be _nodecount
-		CONNECT_NODES(0 /* root */, _nodecount);
-		node->accept(this);
+		name += '(';
+		for(auto arg: symbol->target.params) name += arg + ", ";
+		name = name.erase(name.length() - 2) + ')';
 	}
+	int root = ADD_NODE((name + " =").c_str());
 
+	// generate body
+	CONNECT_NODES(root, _nodecount);
+	symbol->body->accept(this);
+}
+
+void ASTVisualizer::finalize()
+{
 	_stream << FOOTER << endl;
 
 	// write to file
 	DEBUG_PRINT_MSG("Generating AST image...");
-	int status = system(tools::fstr("echo '%s' | dot -Tsvg > %s", _stream.str().c_str(), path.c_str()).c_str());
+	int status = system(tools::fstr("echo '%s' | dot -Tsvg > %s", _stream.str().c_str(), _path.c_str()).c_str());
 	if(status) cout << _stream.str() << endl;
-	// else system(tools::fstr("eog %s", path.c_str()).c_str());
-	// remove(path.c_str());
 }
 
 // =========================================
@@ -107,7 +122,7 @@ VISIT(VariableNode)
 
 VISIT(CallNode)
 {
-	int thisnode = ADD_NODE(tools::fstr("%s ()", node->_ident.c_str()).c_str());
+	int thisnode = ADD_NODE(tools::fstr("%s()", node->_ident.c_str()).c_str());
 
 	for(auto& subnode : node->_args)
 	{

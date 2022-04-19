@@ -2,6 +2,7 @@
 #define VISUALIZER_H
 
 #include "ast.hpp"
+#include "parser.hpp"
 #include "pch"
 
 using namespace std;
@@ -9,7 +10,9 @@ using namespace std;
 class ASTVisualizer: public Visitor
 {
 	public:
-	void visualize(string path, AST* astree);
+	void init();
+	void finalize();
+	void visualize(string path, Symbol* symbol);
 	
 	#define VISIT(_node) void visit(_node* node)
 	#include "visits.def"
@@ -17,6 +20,7 @@ class ASTVisualizer: public Visitor
 
 	private:
 	stringstream _stream;
+	string _path;
 	int _nodecount;
 };
 
@@ -25,7 +29,6 @@ class ASTVisualizer: public Visitor
 	ranksep=.4;\n\
 	edge [arrowsize=.5, arrowhead=\"none\"]\n\
 	rankdir=\"UD\"\n\
-	node0 [label=\"Program\"]\n\
 	\n\
 "
 #define FOOTER "}"

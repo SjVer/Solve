@@ -40,9 +40,6 @@ class ExprNode
 	virtual void accept(Visitor* v) = 0;
 };
 
-// abstract syntax tree
-typedef vector<ExprNode*> AST;
-
 // =================================================
 
 #pragma region nodes

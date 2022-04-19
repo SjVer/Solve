@@ -33,7 +33,7 @@ contexts:
     # variables
     - match: '({{ident}})\s*(=)'
       captures:
-        1: entity.name.variable.slv
+        1: entity.name.function.slv
         2: keyword.definition.variable.slv
       push: terminated-expr
 

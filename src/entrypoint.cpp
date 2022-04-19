@@ -101,23 +101,46 @@ int main(int argc, char **argv)
 
 	// ===================================
 
-	AST astree;
 	Status status = STATUS_SUCCESS;
 	CCP source = strdup(tools::readf(arguments.infile).c_str());
+	vector<Symbol> symbols;
 
 	#define ABORT_IF_UNSUCCESSFULL() if(status != STATUS_SUCCESS) ABORT(status)
 
 	// parse program
 	Parser* parser = new Parser();
-	status = parser->parse(arguments.infile, source, &astree);
+	status = parser->parse(arguments.infile, source, &symbols);
 	ABORT_IF_UNSUCCESSFULL();
 
+
+	// print symbols
+	{
+		DEBUG_PRINT_NL();
+		DEBUG_PRINT_MSG("Symbols:");
+		for(auto s : symbols)
+		{
+			string msg = s.get_ident();
+			if(s.target.has_params)
+			{
+				msg += " (";
+				for(auto p : s.target.params) msg += p + (p != s.target.params.back() ? ", " : "");
+				msg += ")";
+			}
+			DEBUG_PRINT_F_MSG("  %s", msg.c_str());
+		}
+		DEBUG_PRINT_NL();
+	}
 
 	// generate visualization
 	if(arguments.generate_ast)
 	{
-		ASTVisualizer().visualize(string(arguments.infile) + ".svg", &astree);
-		cout << "[sovle] AST image written to \"" + string(arguments.infile) + ".svg\"." << endl;
+		ASTVisualizer viz = ASTVisualizer();
+
+		viz.init();
+		for(auto s : symbols) viz.visualize(string(arguments.infile) + ".svg", &s);
+		viz.finalize();
+
+		cout << "[solve] AST image written to \"" + string(arguments.infile) + ".svg\"." << endl;
 		exit(STATUS_SUCCESS);
 	}
 
