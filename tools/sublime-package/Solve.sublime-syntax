@@ -34,17 +34,32 @@ contexts:
     - match: '({{ident}})\s*(=)'
       captures:
         1: entity.name.variable.slv
-        2: keyword.definition.function.slv
-      push: declaration
+        2: keyword.definition.variable.slv
+      push: terminated-expr
 
     # functions
-    - match: '({{ident}})\s*(\()(\))\s*(=)'
+    - match: '({{ident}})\s*(\()'
       captures:
         1: entity.name.function.slv
-        2: keyword.definition.function.slv
-      push: declaration
+        2: punctuation.section.parens.begin.slv
 
+      embed: scope:source.slv-params
+      embed_scope: meta.parameters.slv
+      escape: (\))\s*(=)
+
+      escape_captures:
+        1: punctuation.section.parens.end.slv
+        2: keyword.definition.function.slv
+      push: expression
+
+    - include: terminated-expr
+
+  terminated-expr:
     - include: expression
+
+    - match: $\n?
+      scope: meta.terminator.slv
+      pop: true
 
   expression:
     - include: comments

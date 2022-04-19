@@ -1,0 +1,48 @@
+%YAML 1.2
+
+---
+
+scope: source.slv-params
+
+variables:
+  ident: "[a-zA-Z_][a-zA-Z0-9_]*'*"
+
+contexts:
+  prototype:
+    - include: comments
+
+  main:
+    - include: comments
+    - include: param
+    - include: comma
+    - include: invalids
+
+
+  param:
+    - match: '{{ident}}'
+      scope: variable.parameter.slv-params
+
+  comma:
+    - match: \,
+      scope: punctuation.separator.sequence.slv-params
+
+
+  invalids:
+    - match: \S
+      scope: invalid.misplaced.slv-params
+
+  comments:
+    - match: ';;'
+      scope: punctuation.definition.comment.slv-params
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.block.slv-params
+        - match: ';;'
+          pop: true
+
+    - match: ';'
+      scope: punctuation.definition.comment.slv-params
+      push:
+        - meta_scope: comment.line.slv-params
+        - match: $\n?
+          pop: true
