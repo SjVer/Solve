@@ -1,7 +1,10 @@
-a() = 3
+a = 3
+x(x) = 2
 
-f(x) = 2 * x + 3
+f(x) = 2 * x() + a
 
-main = x
+a() = 2
+
+main = f(f())
 
 ; main = f(x())

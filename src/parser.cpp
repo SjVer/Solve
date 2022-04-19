@@ -181,25 +181,25 @@ bool Parser::check_symbol(string name)
 
 void Parser::scope_up()
 {
-	DEBUG_PRINT_MSG("scope up");
+	// DEBUG_PRINT_MSG("scope up");
 	_scope_stack.push_back(_current_scope);
 	_current_scope = Scope{map<string, Symbol*>()};
 }
 
 void Parser::scope_down()
 {
-	DEBUG_PRINT_MSG("scope down");
-	for(auto s : _current_scope.symbols) DEBUG_PRINT_F_MSG("    dump %s -> %s", 
-		s.first.c_str(), s.second->get_ident().c_str());
+	// DEBUG_PRINT_MSG("scope down");
+	// for(auto s : _current_scope.symbols) DEBUG_PRINT_F_MSG("    dump %s -> %s", 
+	// 	s.first.c_str(), s.second->get_ident().c_str());
 
 	_current_scope = _scope_stack[_scope_stack.size() - 1];
 	_scope_stack.pop_back();
 
-	for(auto s : _current_scope.symbols) DEBUG_PRINT_F_MSG("    kept %s -> %s", 
-		s.first.c_str(), s.second->get_ident().c_str());
-	for (auto s = _scope_stack.rbegin(); s != _scope_stack.rend(); s++)
-		for(auto ss : s->symbols) DEBUG_PRINT_F_MSG("    kept %s -> %s", 
-			ss.first.c_str(), ss.second->get_ident().c_str());
+	// for(auto s : _current_scope.symbols) DEBUG_PRINT_F_MSG("    kept %s -> %s", 
+	// 	s.first.c_str(), s.second->get_ident().c_str());
+	// for (auto s = _scope_stack.rbegin(); s != _scope_stack.rend(); s++)
+	// 	for(auto ss : s->symbols) DEBUG_PRINT_F_MSG("    kept %s -> %s", 
+	// 		ss.first.c_str(), ss.second->get_ident().c_str());
 }
 
 void Parser::synchronize()
@@ -218,7 +218,6 @@ void Parser::assignment()
 	if(target.invalid && !consume(TOKEN_EQUAL, "Expected assignment.")) return;
 
 	DEBUG_PRINT_NL();
-	DEBUG_PRINT_F_MSG("assigning '%s'", target.name.c_str());
 
 	// add arguments as symbols
 	scope_up();
@@ -383,8 +382,25 @@ NumberNode* Parser::literal()
 
 VariableNode* Parser::variable()
 {
-	// TODO: check the variable's existence and whatnot
-	return new VariableNode(_previous, PREV_TOKEN_STR);
+	Token tok = _previous;
+	string name = PREV_TOKEN_STR;
+
+	Symbol* symbol = get_symbol(name);
+	if(!symbol)
+	{
+		error_at(&tok, "Variable does not exist.");
+		return nullptr;
+	}
+	if(symbol->target.has_params)
+	{
+		HOLD_PANIC();
+		error_at(&tok, "Symbol is not a variable.");
+		if(!PANIC_HELD) note_declaration("Symbol", name, &symbol->target.token);
+		return nullptr;
+	}
+	DEBUG_PRINT_F_MSG("variable: '%s.%u'", symbol->target.name.c_str(), symbol->id);
+
+	return new VariableNode(_previous, symbol->get_ident());
 }
 
 CallNode* Parser::call()

@@ -29,8 +29,9 @@ void ASTVisualizer::visualize(string path, Symbol* symbol)
 	if(symbol->target.has_params)
 	{
 		name += '(';
-		for(auto arg: symbol->target.params) name += arg + ", ";
-		name = name.erase(name.length() - 2) + ')';
+		for(auto arg: symbol->target.params) name += arg + 
+			(arg != symbol->target.params.back() ? ", " : "");
+		name += ')';
 	}
 	int root = ADD_NODE((name + " =").c_str());
 

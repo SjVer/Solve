@@ -45,16 +45,16 @@ contexts:
 
       embed: scope:source.slv-params
       embed_scope: meta.parameters.slv
-      escape: (\))\s*(=)
 
+      escape: (\))\s*(=)?
       escape_captures:
         1: punctuation.section.parens.end.slv
         2: keyword.definition.function.slv
-      push: expression
+      push: terminated-expr
 
-    - include: terminated-expr
 
   terminated-expr:
+    - meta_scope: meta.terminated-expr.slv
     - include: expression
 
     - match: $\n?
