@@ -2,10 +2,10 @@
 
 ---
 
-name: Evi
-file_extensions: [evi, evii, hevi]
-fileTypes: [evi]
-scope: source.evi
+name: Solve
+file_extensions: [slv]
+fileTypes: [slv]
+scope: source.slv
 
 variables:
   ident: "[A-Za-z_][A-Za-z_0-9]*"
