@@ -1,3 +1,5 @@
-x = 3
+f(x) = 2 * x + 3
 
-main = 2 * x
+a = 3
+
+main = f(a)
