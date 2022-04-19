@@ -1,11 +1,34 @@
 #ifndef AST_H
 #define AST_H
 
-#include "common.hpp"
 #include "pch"
+#include "common.hpp"
 #include "scanner.hpp"
 
 // =================================================
+
+class ExprNode;
+
+typedef struct
+{
+	Token token;
+	string name;
+
+	bool has_params = false;
+	vector<string> params;
+
+	bool invalid = true;
+} Target;
+
+typedef struct
+{
+	Target target;
+	uint id = 0;
+	ExprNode* body = nullptr;
+	bool invalid = true;
+
+	string get_ident() { return target.name + '.' + to_string(id); }
+} Symbol;
 
 // forward declarate nodes
 class AssignNode;
@@ -108,22 +131,22 @@ class VariableNode: public ExprNode
 {
 	public:
 
-	VariableNode(Token token, string ident):
-		ExprNode(token), _ident(ident) {}
+	VariableNode(Token token, Symbol* symbol):
+		ExprNode(token), _symbol(symbol) {}
 	ACCEPT
 
-	string _ident;
+	Symbol* _symbol;
 };
 
 class CallNode: public ExprNode
 {
 	public:
 
-	CallNode(Token token, string ident, vector<ExprNode*> args):
-		ExprNode(token), _ident(ident), _args(args) {}
+	CallNode(Token token, Symbol* symbol, vector<ExprNode*> args):
+		ExprNode(token), _symbol(symbol), _args(args) {}
 	ACCEPT
 
-	string _ident;
+	Symbol* _symbol;
 	vector<ExprNode*> _args;
 };
 

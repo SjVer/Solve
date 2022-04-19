@@ -400,7 +400,7 @@ VariableNode* Parser::variable()
 	}
 	DEBUG_PRINT_F_MSG("variable: '%s.%u'", symbol->target.name.c_str(), symbol->id);
 
-	return new VariableNode(_previous, symbol->get_ident());
+	return new VariableNode(_previous, symbol);
 }
 
 CallNode* Parser::call()
@@ -442,7 +442,7 @@ CallNode* Parser::call()
 	CONSUME_OR_RET_NULL(TOKEN_RIGHT_PAREN, "Expected ')' after arguments.");
 
 	// return funcprops.invalid ? nullptr : new CallNode(tok, name, args, funcprops.ret_type, lexparams, paramscount);
-	return new CallNode(tok, symbol->get_ident(), args);
+	return new CallNode(tok, symbol, args);
 }
 
 // ======================= misc. =======================

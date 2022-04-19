@@ -11,29 +11,6 @@ using namespace std;
 
 // ==== ============= ====
 
-typedef struct
-{
-	Token token;
-	string name;
-
-	bool has_params = false;
-	vector<string> params;
-
-	bool invalid = true;
-} Target;
-
-typedef struct
-{
-	Target target;
-	uint id = 0;
-	ExprNode* body = nullptr;
-	bool invalid = true;
-
-	string get_ident() { return target.name + '.' + to_string(id); }
-} Symbol;
-
-// ==== ============= ====
-
 class Parser
 {
 public:

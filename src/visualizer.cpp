@@ -1,4 +1,5 @@
 #include "visualizer.hpp"
+#include "parser.hpp"
 #include "tools.hpp"
 
 #define ADD_NODE(name) (_stream << \
@@ -118,12 +119,12 @@ VISIT(NumberNode)
 
 VISIT(VariableNode)
 {
-	ADD_NODE(node->_ident.c_str());
+	ADD_NODE(node->_symbol->get_ident().c_str());
 }
 
 VISIT(CallNode)
 {
-	int thisnode = ADD_NODE(tools::fstr("%s()", node->_ident.c_str()).c_str());
+	int thisnode = ADD_NODE(tools::fstr("%s()", node->_symbol->get_ident().c_str()).c_str());
 
 	for(auto& subnode : node->_args)
 	{

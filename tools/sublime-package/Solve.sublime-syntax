@@ -28,6 +28,18 @@ contexts:
     - include: invalids
 
 
+
+  expression:
+    - include: comments
+
+    - include: declaration
+
+    - include: operator
+    - include: number
+    - include: call
+    - include: variable
+
+
   declaration:
 
     # variables
@@ -35,10 +47,10 @@ contexts:
       captures:
         1: entity.name.function.slv
         2: keyword.definition.variable.slv
-      push: terminated-expr
+      push: expression
 
     # functions
-    - match: '({{ident}})\s*(\()'
+    - match: '({{ident}})\s*(\()(?=.*\)\s*=)'
       captures:
         1: entity.name.function.slv
         2: punctuation.section.parens.begin.slv
@@ -50,27 +62,8 @@ contexts:
       escape_captures:
         1: punctuation.section.parens.end.slv
         2: keyword.definition.function.slv
-      push: terminated-expr
+      push: expression
 
-
-  terminated-expr:
-    - meta_scope: meta.terminated-expr.slv
-    - include: expression
-
-    - match: $\n?
-      scope: meta.terminator.slv
-      pop: true
-
-  expression:
-    - include: comments
-
-    - include: operator
-
-    - include: number
-    - include: call
-    - include: variable
-
-    - include: terminator
 
   operator:
     - match: ==|/=
@@ -88,14 +81,12 @@ contexts:
     - match: \*|/|-|\+
       scope: keyword.operator.arithmetic.slv
 
-
-
   number:
     - match: \b{{number}}\b
       scope: constant.numeric.slv
 
   call:
-    - match: '({{ident}})\s*(\()'
+    - match: '({{ident}})\s*(\()(?!.*\)\s*=)'
       captures:
         1: variable.function.slv
         2: punctuation.section.arguments.begin.slv
