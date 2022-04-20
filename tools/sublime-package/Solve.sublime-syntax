@@ -32,7 +32,7 @@ contexts:
   expression:
     - include: comments
 
-    - include: declaration
+    # - include: declaration
 
     - include: operator
     - include: number

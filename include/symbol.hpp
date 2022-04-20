@@ -19,11 +19,16 @@ typedef struct _Target
 typedef struct _Symbol
 {
 	Target target;
-	uint id = 0;
+	int id = 0;
 	ExprNode* body = nullptr;
 	bool invalid = true;
 
-	string get_ident() { return target.name + '.' + to_string(id); }
+	string get_ident()
+	{
+		string idstr = id >= 0 ? "." + to_string(id)
+							   : "," + to_string(-id - 1);
+		return target.name + idstr;
+	}
 } Symbol;
 
 #endif

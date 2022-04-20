@@ -21,15 +21,9 @@ class CallNode;
 // visitor class
 class Visitor
 {
-	public:
+public:
 	#define VISIT(_node) virtual void visit(_node* node) = 0
-	VISIT(AssignNode);
-	VISIT(BinaryNode);
-	VISIT(UnaryNode);
-	VISIT(GroupingNode);
-	VISIT(NumberNode);
-	VISIT(VariableNode);
-	VISIT(CallNode);
+	#include "visits.def"
 	#undef VISIT
 };
 

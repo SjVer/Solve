@@ -10,6 +10,8 @@
 #include "ast.hpp"
 #include "parser.hpp"
 #include "visualizer.hpp"
+#include "printer.hpp"
+#include "solver.hpp"
 
 // ================= arg stuff =======================
 
@@ -98,16 +100,16 @@ int main(int argc, char **argv)
 	if(argp_parse(&argp, argc, argv, 0, 0, &arguments)) ABORT(STATUS_CLI_ERROR);
 
 	// ===================================
+	#define ABORT_IF_UNSUCCESSFULL() if(status != STATUS_SUCCESS) ABORT(status)
 
 	Status status = STATUS_SUCCESS;
 	CCP source = strdup(tools::readf(arguments.infile).c_str());
 	vector<Symbol*> symbols;
 
-	#define ABORT_IF_UNSUCCESSFULL() if(status != STATUS_SUCCESS) ABORT(status)
 
 	// parse program
-	Parser* parser = new Parser();
-	status = parser->parse(arguments.infile, source, &symbols);
+	Parser parser = Parser();
+	status = parser.parse(arguments.infile, source, &symbols);
 	ABORT_IF_UNSUCCESSFULL();
 
 
@@ -128,6 +130,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+
 	// generate visualization
 	if(arguments.generate_ast)
 	{
@@ -142,10 +145,37 @@ int main(int argc, char **argv)
 	}
 
 
-	// execute
-	// Parser* parser = new Parser();
-	// status = parser->parse(arguments.infiles[0], source, &astree);
-	// ABORT_IF_UNSUCCESSFULL();
+	// find symbol to solve
+	// TODO: allow user-specified main symbol
+	Symbol* to_solve = nullptr;
+	for(auto it = symbols.rbegin(); it != symbols.rend(); it++)
+	{
+		Symbol* s = *it;
+		if(s->target.name == "main" && !s->target.has_params)
+			{ to_solve = s; break; }
+	}
+	if(!to_solve) { ERR("Could not solve for undefined variable 'main'."); ABORT(STATUS_SOLVE_ERROR); }
+
+
+	// print
+	if(arguments.verbose > 1)
+	{
+		Printer printer = Printer();
+		string out = printer.print(to_solve);
+		// MSG("Expanded expression: " << endl << endl << "    " << out << endl);
+		MSG("Expanded expression: ");
+		MSG("");
+		MSG("    " << out);
+		MSG("");
+	}
+
+
+	// solve
+	Solver solver = Solver();
+	status = solver.solve(to_solve);
+	ABORT_IF_UNSUCCESSFULL();
+	if(arguments.verbose) { MSG("Result of solved expression: " << solver.result); }
+
 
 	free((void*)source);
 	DEBUG_PRINT_MSG("Exited sucessfully.");

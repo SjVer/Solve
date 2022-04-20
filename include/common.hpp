@@ -90,6 +90,7 @@ More information at %s.\nBuild: %s %s on %s (%s)."
 
 #define ABORT(status) { cerr << tools::fstr("[solve] Aborted with code %d.\n", status); exit(status); }
 #define THROW_INTERNAL_ERROR(where) { DEBUG_PRINT_MSG("internal error " where); raise(SIGINT); }
+#define ASSERT_OR_THROW_INTERNAL_ERROR(condition, where) { if(!(condition)) THROW_INTERNAL_ERROR(where); }
 
 #pragma endregion
 
@@ -99,7 +100,7 @@ typedef enum
 	STATUS_SUCCESS = 0,
 	STATUS_CLI_ERROR = 1,
 	STATUS_PARSE_ERROR = 2,
-	STATUS_INTERPRET_ERROR = 3,
+	STATUS_SOLVE_ERROR = 3,
 
 	STATUS_INTERNAL_ERROR = -1
 } Status;

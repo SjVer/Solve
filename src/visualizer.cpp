@@ -119,12 +119,7 @@ VISIT(NumberNode)
 
 VISIT(VariableNode)
 {
-	uint thisnode = ADD_NODE(node->_symbol->get_ident().c_str());
-	if(node->_symbol->body)
-	{
-		CONNECT_NODES(thisnode, _nodecount);
-		node->_symbol->body->accept(this);
-	}
+	ADD_NODE(node->_symbol->get_ident().c_str());
 }
 
 VISIT(CallNode)

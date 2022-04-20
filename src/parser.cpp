@@ -145,11 +145,18 @@ bool Parser::is_at_end()
 void Parser::set_symbol(Symbol symbol)
 {
 	// find last symbol with same name and get its ID
-	for(auto s = _symbols.rbegin(); s != _symbols.rend(); s++)
-		if((*s)->target.name == symbol.target.name) { symbol.id = (*s)->id + 1; break; }
+	if(symbol.id == 0)
+	{
+		for(auto s = _symbols.rbegin(); s != _symbols.rend(); s++)
+			if((*s)->target.name == symbol.target.name)
+			{
+				symbol.id = (*s)->id + 1;
+				break;
+			}
+	}
 
 	Symbol* symptr = new Symbol(symbol);
-	_symbols.push_back(symptr);
+	if(symbol.id >= 0) _symbols.push_back(symptr);
 	_current_scope.symbols[symbol.target.name] = symptr;
 
 	#ifdef DEBUG
@@ -214,21 +221,21 @@ void Parser::assignment()
 	if(target.invalid || !consume(TOKEN_EQUAL, "Expected assignment.")) return;
 
 	DEBUG_PRINT_NL();
-
-	// add arguments as symbols
 	scope_up();
-	if(target.has_params) for(auto p : target.params)
+
+	// add params as symbols
+	for(int i = 0; i < target.params.size(); i++)
 	{
 		Target t{
 			.token = target.token,
-			.name = p,
+			.name = target.params[i],
 			.has_params = false,
 			.params = {},
 			.invalid = false,
 		};
 		set_symbol(Symbol{
 			.target = t,
-			.id = 0, // will be set by set_symbol()
+			.id = -i - 1, // will be set by set_symbol()
 			.body = nullptr,
 			.invalid = false,
 		});
@@ -236,8 +243,8 @@ void Parser::assignment()
 
 	// get expression
 	ExprNode* body = expression();
-	scope_down();
 
+	scope_down();
 	set_symbol(Symbol{
 		.target = target,
 		.id = 0,
