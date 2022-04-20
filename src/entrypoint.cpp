@@ -19,9 +19,8 @@ static char args_doc[] = "file...";
 
 struct arguments
 {
-	char *infile;
+	char *infile = nullptr;
 	int verbose = 0;
-	bool debug = false;
 	bool generate_ast = false;
 };
 
@@ -33,7 +32,6 @@ static struct argp_option options[] =
 	{"version", 			'V', 			 0, 		  0, "Display compiler version information."},
 	{"usage", 				'u', 			 0, 		  0, "Display a usage information message."},
 	{"verbose", 			'v', 			 0, 		  0, "Produce verbose output."},
-	{"debug", 				'd', 			 0, 		  0, "Display debug information."},
 	{"generate-ast",  		ARG_GEN_AST, 	 0, 		  0, "Generate AST image."},
 
 	{0}
@@ -72,7 +70,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 	{
 		if(arguments->infile)
 		{
-			cerr << "[solve] Error: Cannot interpret more than 1 file." << endl;
+			ERR("Cannot interpret more than 1 file.");
 			ABORT(STATUS_CLI_ERROR);
 		}
 		else arguments->infile = arg;
@@ -103,7 +101,7 @@ int main(int argc, char **argv)
 
 	Status status = STATUS_SUCCESS;
 	CCP source = strdup(tools::readf(arguments.infile).c_str());
-	vector<Symbol> symbols;
+	vector<Symbol*> symbols;
 
 	#define ABORT_IF_UNSUCCESSFULL() if(status != STATUS_SUCCESS) ABORT(status)
 
@@ -114,21 +112,20 @@ int main(int argc, char **argv)
 
 
 	// print symbols
+	if(arguments.verbose)
 	{
-		DEBUG_PRINT_NL();
-		DEBUG_PRINT_MSG("Symbols:");
+		MSG("Defined symbols:");
 		for(auto s : symbols)
 		{
-			string msg = s.get_ident();
-			if(s.target.has_params)
+			string msg = "    " + s->get_ident();
+			if(s->target.has_params)
 			{
 				msg += " (";
-				for(auto p : s.target.params) msg += p + (p != s.target.params.back() ? ", " : "");
+				for(auto p : s->target.params) msg += p + (p != s->target.params.back() ? ", " : "");
 				msg += ")";
 			}
-			DEBUG_PRINT_F_MSG("  %s", msg.c_str());
+			MSG(msg);
 		}
-		DEBUG_PRINT_NL();
 	}
 
 	// generate visualization
@@ -137,10 +134,10 @@ int main(int argc, char **argv)
 		ASTVisualizer viz = ASTVisualizer();
 
 		viz.init();
-		for(auto s : symbols) viz.visualize(string(arguments.infile) + ".svg", &s);
+		for(auto s : symbols) viz.visualize(string(arguments.infile) + ".svg", s);
 		viz.finalize();
 
-		cout << "[solve] AST image written to \"" + string(arguments.infile) + ".svg\"." << endl;
+		MSG("AST image written to \"" + string(arguments.infile) + ".svg\".");
 		exit(STATUS_SUCCESS);
 	}
 

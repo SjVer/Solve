@@ -18,6 +18,8 @@ void Parser::error_at(Token *token, string message)
 		cerr << endl;
 		_error_dispatcher.print_token_marked(token, COLOR_RED);
 	}
+
+	ABORT(STATUS_PARSE_ERROR);
 }
 
 // displays an error at the previous token with the given message
@@ -98,7 +100,7 @@ Target Parser::consume_target()
 {
 	Target target = Target();
 
-	if(!consume(TOKEN_IDENTIFIER, "Expected symbol name.")) return target;
+	if(!consume(TOKEN_IDENTIFIER, "Expected symbol target.")) return target;
 	target.name = PREV_TOKEN_STR;
 	target.token = _previous;
 
@@ -118,6 +120,7 @@ Target Parser::consume_target()
 		consume(TOKEN_RIGHT_PAREN, "Expected ')' after parameters.");
 	}
 	
+	target.invalid = _panic_mode;
 	return target;
 }
 
@@ -143,11 +146,11 @@ void Parser::set_symbol(Symbol symbol)
 {
 	// find last symbol with same name and get its ID
 	for(auto s = _symbols.rbegin(); s != _symbols.rend(); s++)
-		if(s->target.name == symbol.target.name) { symbol.id = s->id + 1; break; }
+		if((*s)->target.name == symbol.target.name) { symbol.id = (*s)->id + 1; break; }
 
-	_symbols.push_back(symbol);
-	_current_scope.symbols[symbol.target.name] = &_symbols.back();
-	// _current_scope.symbols[symbol.target.name] = symbol;
+	Symbol* symptr = new Symbol(symbol);
+	_symbols.push_back(symptr);
+	_current_scope.symbols[symbol.target.name] = symptr;
 
 	#ifdef DEBUG
 	string msg = "set symbol '" + symbol.get_ident() + '\'';
@@ -202,20 +205,13 @@ void Parser::scope_down()
 	// 		ss.first.c_str(), ss.second->get_ident().c_str());
 }
 
-void Parser::synchronize()
-{
-	_panic_mode = false;
-	
-	while(!is_at_end() && _current.type != TOKEN_NEWLINE) advance();
-}
-
 // ===================== expressions ====================
 
 void Parser::assignment()
 {
 	// get target
 	Target target = consume_target();
-	if(target.invalid && !consume(TOKEN_EQUAL, "Expected assignment.")) return;
+	if(target.invalid || !consume(TOKEN_EQUAL, "Expected assignment.")) return;
 
 	DEBUG_PRINT_NL();
 
@@ -242,17 +238,19 @@ void Parser::assignment()
 	ExprNode* body = expression();
 	scope_down();
 
-	DEBUG_PRINT_F_MSG("assigned '%s'", target.name.c_str());
 	set_symbol(Symbol{
 		.target = target,
 		.id = 0,
 		.body = body,
-		.invalid = target.invalid || !body
+		.invalid = target.invalid || _panic_mode
 	});
+
+	DEBUG_PRINT_F_MSG("assigned '%s'", target.name.c_str());
 }
 
 ExprNode* Parser::expression()
 {
+	//
 	return equality();
 }
 
@@ -398,9 +396,11 @@ VariableNode* Parser::variable()
 		if(!PANIC_HELD) note_declaration("Symbol", name, &symbol->target.token);
 		return nullptr;
 	}
-	DEBUG_PRINT_F_MSG("variable: '%s.%u'", symbol->target.name.c_str(), symbol->id);
 
-	return new VariableNode(_previous, symbol);
+	DEBUG_PRINT_F_MSG("variable: '%s'", symbol->get_ident().c_str());
+
+	if(symbol->invalid) DEBUG_PRINT_MSG("VARIABLE INVALID!");
+	return symbol->invalid ? nullptr : new VariableNode(_previous, symbol);
 }
 
 CallNode* Parser::call()
@@ -423,6 +423,7 @@ CallNode* Parser::call()
 		if(!PANIC_HELD) note_declaration("Symbol", name, &symbol->target.token);
 		return nullptr;
 	}
+
 	DEBUG_PRINT_F_MSG("callee: '%s.%u'", symbol->target.name.c_str(), symbol->id);
 
 	vector<ExprNode*> args;
@@ -441,19 +442,19 @@ CallNode* Parser::call()
 
 	CONSUME_OR_RET_NULL(TOKEN_RIGHT_PAREN, "Expected ')' after arguments.");
 
-	// return funcprops.invalid ? nullptr : new CallNode(tok, name, args, funcprops.ret_type, lexparams, paramscount);
-	return new CallNode(tok, symbol, args);
+	if(symbol->invalid) DEBUG_PRINT_MSG("CALLEE INVALID!");
+	return symbol->invalid ? nullptr : new CallNode(tok, symbol, args);
 }
 
 // ======================= misc. =======================
 
-Status Parser::parse(string infile, CCP source, vector<Symbol>* symbols_dest)
+Status Parser::parse(string infile, CCP source, vector<Symbol*>* symbols_dest)
 {
 	// print_tokens_from_src(source);
 
 	// set members
 	_scanner = Scanner(&infile, source);
-	_symbols = vector<Symbol>();
+	_symbols = vector<Symbol*>();
 	_scope_stack = vector<Scope>();
 	_current_scope = Scope{map<string, Symbol*>()};
 
@@ -467,10 +468,12 @@ Status Parser::parse(string infile, CCP source, vector<Symbol>* symbols_dest)
 	while (!is_at_end())
 	{
 		assignment();
-		if(_panic_mode) synchronize();
+		// if(_panic_mode) synchronize();
 	}
 
+	DEBUG_PRINT_NL();
 	DEBUG_PRINT_MSG("Parsing complete!");
+	
 	*symbols_dest = _symbols;
 	return _had_error ? STATUS_PARSE_ERROR : STATUS_SUCCESS;
 }

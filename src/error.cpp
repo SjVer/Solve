@@ -13,8 +13,15 @@ void ErrorDispatcher::print_token_marked(Token *token, CCP color)
 	ptrdiff_t tok_ln_begin;
 	{
 		tok_ln_begin = token_offset;
-		while(tok_ln_begin > 0 && token->source[tok_ln_begin] != '\n') tok_ln_begin--;
-		tok_ln_begin++; // skip newline itself
+		if(token->line == 1)
+		{
+			tok_ln_begin = 0;
+		}
+		else
+		{
+			while(tok_ln_begin > 0 && token->source[tok_ln_begin] != '\n') tok_ln_begin--;
+			tok_ln_begin++; // skip newline itself
+		}
 	}
 
 	// find first newline after token

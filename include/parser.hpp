@@ -14,7 +14,7 @@ using namespace std;
 class Parser
 {
 public:
-	Status parse(string infile, CCP source, vector<Symbol>* symbols_dest);
+	Status parse(string infile, CCP source, vector<Symbol*>* symbols_dest);
 
 private:
 
@@ -45,7 +45,6 @@ private:
 	bool check_symbol(string name);
 	void scope_up();
 	void scope_down();
-	void synchronize();
 
 	void assignment();
 	ExprNode* expression();
@@ -65,7 +64,7 @@ private:
 	Token _current;
 	Token _previous;
 
-	vector<Symbol> _symbols;
+	vector<Symbol*> _symbols;
 	Scope _current_scope;
 	vector<Scope> _scope_stack;
 

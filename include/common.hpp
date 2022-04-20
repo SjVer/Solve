@@ -85,6 +85,9 @@ More information at %s.\nBuild: %s %s on %s (%s)."
 #define DEBUG_PRINT_NL() {}
 #endif
 
+#define MSG(msg) { cout << "[solve] " << msg << endl; }
+#define ERR(msg) { cerr << "[solve] Error: " << msg << endl; }
+
 #define ABORT(status) { cerr << tools::fstr("[solve] Aborted with code %d.\n", status); exit(status); }
 #define THROW_INTERNAL_ERROR(where) { DEBUG_PRINT_MSG("internal error " where); raise(SIGINT); }
 

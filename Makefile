@@ -7,7 +7,7 @@ CC = clang++
 
 MUTE = write-strings varargs # sign-compare unused-function comment dangling-gsl unknown-warning-option c++17-extensions
 DEFS = 
-CXXFLAGS = -Wall $(addprefix -Wno-,$(MUTE)) $(addprefix -D,$(DEFS))
+CXXFLAGS = -std=c++14 -Wall $(addprefix -Wno-,$(MUTE)) $(addprefix -D,$(DEFS))
 
 # Makefile settings - Can be customized.
 APPNAME = solve
@@ -98,7 +98,7 @@ remake: clean $(APP)
 .PHONY: test
 test: $(APP)
 	@printf "============= Running \"$(APP)\" =============\n\n"
-	@$(APP) test/test.slv $(args)
+	@$(APP) test/test.slv -v $(args)
 
 .PHONY: valgrind
 valgrind: debug $(APP)
