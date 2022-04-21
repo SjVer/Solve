@@ -1,8 +1,6 @@
-0x0 -> "Hello World!\n"
-0x1 -> 0xff
+0x0 -> 1
 
+a = 2
 a = 3
 
-f(x) = 2 * x + a
-
-main = @printb[15]
+main = @get[0] + a.0 + a

@@ -36,12 +36,13 @@ private:
 	bool consume_terminator();
 	Target consume_target();
 	bool match(TokenType type);
+	int parse_prev_integer();
 	bool is_at_end();
 
 	#define CONSUME_OR_RET_NULL(type, msg) if(!consume(type, msg)) return nullptr;
 
 	void set_symbol(Symbol symbol);
-	Symbol* get_symbol(string name);
+	Symbol* get_symbol(string name, int id = -1);
 	bool check_symbol(string name);
 	void scope_up();
 	void scope_down();
@@ -57,8 +58,8 @@ private:
 		ExprNode* unary();
 		ExprNode* primary();
 			NumberNode* number();
-			VariableNode* variable();
-			CallNode* call();
+			VariableNode* finish_variable(Token, Symbol*);
+			CallNode* finish_call(Token, Symbol*);
 			ActionNode* action();
 
 	// members

@@ -7,7 +7,7 @@ CC = clang++
 
 MUTE = write-strings varargs # sign-compare unused-function comment dangling-gsl unknown-warning-option c++17-extensions
 DEFS = 
-CXXFLAGS = -std=c++14 -Wall $(addprefix -Wno-,$(MUTE)) $(addprefix -D,$(DEFS))
+CXXFLAGS = -std=c++14 -Wall $(addprefix -Wno-,$(MUTE)) $(addprefix -D,$(DEFS)) #-fsanitize=address
 
 # Makefile settings - Can be customized.
 APPNAME = solve

@@ -4,7 +4,8 @@ Status Solver::solve(Environment* env, Symbol* symbol)
 {
 	// reset result real quick
 	result = nan("<no result>");
-	_args = vector<ExprNode*>();
+	_args_stack = {};
+	_value_stack = {};
 	_env = env;
 
 	symbol->body->accept(this);
@@ -17,14 +18,14 @@ Status Solver::solve(Environment* env, Symbol* symbol)
 void Solver::push(double value)
 {
 	// just push the value
-	_stack.push(value);
+	_value_stack.push(value);
 }
 
 double Solver::pop()
 {
-	ASSERT_OR_THROW_INTERNAL_ERROR(!_stack.empty(), "during solving");
-	double value = _stack.top();
-	_stack.pop();
+	ASSERT_OR_THROW_INTERNAL_ERROR(!_value_stack.empty(), "during solving");
+	double value = _value_stack.top();
+	_value_stack.pop();
 	return value;
 }
 
@@ -91,19 +92,19 @@ VISIT(NumberNode)
 VISIT(VariableNode)
 {
 	if(node->_symbol->id >= 0) node->_symbol->body->accept(this);
-	else _args[-node->_symbol->id - 1]->accept(this);
+	else _args_stack.top()[-node->_symbol->id - 1]->accept(this);
 }
 
 VISIT(CallNode)
 {
 	// set args
-	_args.clear();
-	for(auto a : node->_args) _args.push_back(a);
+	_args_stack.push({});
+	for(auto a : node->_args) _args_stack.top().push_back(a);
 
 	// visit body
 	node->_symbol->body->accept(this);
 
-	_args.clear();
+	_args_stack.pop();
 }
 
 VISIT(ActionNode)

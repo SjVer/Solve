@@ -222,10 +222,13 @@ Token Scanner::scanToken()
 		case ')': return makeToken(TOKEN_RIGHT_PAREN);
 		case '[': return makeToken(TOKEN_LEFT_B_BRACE);
 		case ']': return makeToken(TOKEN_RIGHT_B_BRACE);
+
+		case '@': return makeToken(TOKEN_AT);
+		case '.': return makeToken(TOKEN_DOT);
 		case ',': return makeToken(TOKEN_COMMA);
+		
 		case '+': return makeToken(TOKEN_PLUS);
 		case '*': return makeToken(TOKEN_STAR);
-		case '@': return makeToken(TOKEN_AT);
 
 		// two-character
 		case '=': return makeToken(match('=') ? TOKEN_EQUAL_EQUAL	: TOKEN_EQUAL);
@@ -250,7 +253,7 @@ Token Scanner::scanToken()
 	return errorToken(errstr);
 }
 
-uint get_token_col(Token* token, uint tab_width)
+uint get_token_col(Token* token, int tab_width)
 {
 	if(token->type == TOKEN_ERROR) return 0;
 	

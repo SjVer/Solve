@@ -1,7 +1,7 @@
 {
 	"shell": true,
 	"quiet": true,
-	"word_wrap": false,
+	// "word_wrap": false,
 	"kill_previous": true,
 
 	"syntax": "Packages/ANSIescape/ANSI.sublime-syntax",

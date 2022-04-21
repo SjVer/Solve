@@ -24,10 +24,10 @@ private:
 
 	void push(double value);
 	double pop();
-	stack<double> _stack;
+	stack<double> _value_stack;
 
 	Environment* _env;
-	vector<ExprNode*> _args;
+	stack<vector<ExprNode*>> _args_stack;
 };
 
 

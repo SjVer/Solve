@@ -22,7 +22,7 @@ private:
 	#define PRINT(what) { _stream << what; }
 	stringstream _stream;
 
-	vector<ExprNode*>* _args;
+	stack<vector<ExprNode*>> _args_stack;
 };
 
 

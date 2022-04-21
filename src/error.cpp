@@ -103,7 +103,7 @@ void ErrorDispatcher::__dispatch(CCP color, CCP prompt, CCP message)
 
 void ErrorDispatcher::__dispatch_at_token(CCP color, Token* token, CCP prompt, CCP message)
 {
-	fprintf(stderr, "[%s:%d:%d] %s%s" COLOR_NONE ": %s\n",
+	fprintf(stderr, "[%s:%d:%u] %s%s" COLOR_NONE ": %s\n",
 			token->file->c_str(),
 			token->line, get_token_col(token) + 1, 
 			color, prompt, message);

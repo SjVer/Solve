@@ -133,6 +133,19 @@ bool Parser::match(TokenType type)
 	return true;
 }
 
+int Parser::parse_prev_integer()
+{
+	int base = 0;
+	string tok = PREV_TOKEN_STR;
+	
+			if(tok.size() > 2 && tolower(tok[1]) == 'b') base = 2;
+	else if(tok.size() > 2 && tolower(tok[1]) == 'c') base = 8;
+	else if(tok.size() > 2 && tolower(tok[1]) == 'x') base = 16;
+	else base = 10;
+
+	return strtol(tok.c_str() + (base != 10 ? 2 : 0), NULL, base);
+}
+
 // checks if EOF reached
 bool Parser::is_at_end()
 {
@@ -171,14 +184,35 @@ void Parser::set_symbol(Symbol symbol)
 	#endif
 }
 
-Symbol* Parser::get_symbol(string name)
+// id = -1 is ignored
+Symbol* Parser::get_symbol(string name, int id)
 {
-	if(_current_scope.symbols.find(name) != _current_scope.symbols.end())
-		return _current_scope.symbols.at(name);
+	if(id == -1)
+	{
+		if(_current_scope.symbols.find(name) != _current_scope.symbols.end())
+			return _current_scope.symbols.at(name);
 
-	for (auto s = _scope_stack.rbegin(); s != _scope_stack.rend(); s++)
-		if (s->symbols.find(name) != s->symbols.end())
-			return s->symbols.at(name);
+		for (auto s = _scope_stack.rbegin(); s != _scope_stack.rend(); s++)
+			if (s->symbols.find(name) != s->symbols.end())
+				return s->symbols.at(name);
+	}
+	else
+	{
+		for(auto s : _current_scope.symbols)
+		{
+			cout << s.second->id << " vs " << id << endl;
+			cout << s.first << " vs " << name << endl << endl;
+			if(s.second->id == id && s.first == name) return s.second;
+		}
+
+		for (auto ss = _scope_stack.rbegin(); ss != _scope_stack.rend(); ss++)
+			for(auto s : ss->symbols)
+			{
+				cout << s.second->id << " vs " << id << endl;
+				cout << s.first << " vs " << name << endl << endl;
+				if(s.second->id == id && s.first == name) return s.second;
+			}
+	}
 
 	return nullptr;
 }
@@ -216,18 +250,7 @@ void Parser::scope_down()
 
 void Parser::bind()
 {
-	uint addr; // get addr
-	{
-		int base = 0;
-		string tok = PREV_TOKEN_STR;
-		
-			 if(tok.size() > 2 && tolower(tok[1]) == 'b') base = 2;
-		else if(tok.size() > 2 && tolower(tok[1]) == 'c') base = 8;
-		else if(tok.size() > 2 && tolower(tok[1]) == 'x') base = 16;
-		else base = 10;
-
-		addr = strtol(tok.c_str() + (base != 10 ? 2 : 0), NULL, base);
-	}
+	uint addr = parse_prev_integer();
 
 	if(!consume(TOKEN_ARROW, "Expected '->' after bind address.")) return;		
 
@@ -386,8 +409,26 @@ ExprNode* Parser::primary()
 	// variables and calls
 	else if(match(TOKEN_IDENTIFIER))
 	{
-		if(check(TOKEN_LEFT_PAREN)) return call();
-		else return variable();
+		Token tok = _previous;
+		string name = PREV_TOKEN_STR;
+
+		// allow explicit ID
+		int id = -1;
+		if(match(TOKEN_DOT))
+		{
+			if(!consume(TOKEN_INTEGER, "Expect ID after '.'.")) return nullptr;
+			id = parse_prev_integer();
+		}
+
+		Symbol* symbol = get_symbol(name, id);
+		if(!symbol)
+		{
+			error_at(&tok, "Symbol does not exist.");
+			return nullptr;
+		}
+
+		if(match(TOKEN_LEFT_PAREN)) return finish_call(tok, symbol);
+		else return finish_variable(tok, symbol);
 	}
 
 	// actions
@@ -405,15 +446,7 @@ NumberNode* Parser::number()
 	{
 		case TOKEN_INTEGER:
 		{
-			int base = 0;
-			string tok = PREV_TOKEN_STR;
-			
-				 if(tok.size() > 2 && tolower(tok[1]) == 'b') base = 2;
-			else if(tok.size() > 2 && tolower(tok[1]) == 'c') base = 8;
-			else if(tok.size() > 2 && tolower(tok[1]) == 'x') base = 16;
-			else base = 10;
-
-			long intval = strtol(tok.c_str() + (base != 10 ? 2 : 0), NULL, base);
+			int intval = parse_prev_integer();
 			return new NumberNode(_previous, intval);
 		}
 		case TOKEN_FLOAT:
@@ -427,17 +460,10 @@ NumberNode* Parser::number()
 	return nullptr;
 }
 
-VariableNode* Parser::variable()
+VariableNode* Parser::finish_variable(Token tok, Symbol* symbol)
 {
-	Token tok = _previous;
-	string name = PREV_TOKEN_STR;
+	string name = string(tok.start, tok.length);
 
-	Symbol* symbol = get_symbol(name);
-	if(!symbol)
-	{
-		error_at(&tok, "Variable does not exist.");
-		return nullptr;
-	}
 	if(symbol->target.has_params)
 	{
 		HOLD_PANIC();
@@ -452,19 +478,10 @@ VariableNode* Parser::variable()
 	return symbol->invalid ? nullptr : new VariableNode(_previous, symbol);
 }
 
-CallNode* Parser::call()
+CallNode* Parser::finish_call(Token tok, Symbol* symbol)
 {
-	Token tok = _previous;
-	string name = PREV_TOKEN_STR;
+	string name = string(tok.start, tok.length);
 
-	CONSUME_OR_RET_NULL(TOKEN_LEFT_PAREN, "Expected '(' after identifier.");
-
-	Symbol* symbol = get_symbol(name);
-	if(!symbol)
-	{
-		error_at(&tok, "Function does not exist.");
-		return nullptr;
-	}
 	if(!symbol->target.has_params)
 	{
 		HOLD_PANIC();

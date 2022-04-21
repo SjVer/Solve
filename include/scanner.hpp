@@ -14,6 +14,10 @@ typedef enum
 	// TOKEN_RIGHT_BRACE,
 	TOKEN_LEFT_B_BRACE,
 	TOKEN_RIGHT_B_BRACE,
+	
+	TOKEN_DOT,
+	TOKEN_AT,
+
 	TOKEN_EQUAL,
 	TOKEN_COMMA,
 	TOKEN_PLUS,
@@ -22,7 +26,8 @@ typedef enum
 	TOKEN_SLASH,
 	TOKEN_GREATER,
 	TOKEN_LESS,
-	// TOKEN_MODULO,
+	TOKEN_MODULO,
+
 
 	// Multi-character tokens
 	TOKEN_EQUAL_EQUAL,
@@ -32,7 +37,6 @@ typedef enum
 	TOKEN_ARROW,
 
 	// Literals.
-	TOKEN_AT,
 	TOKEN_IDENTIFIER,
 	TOKEN_INTEGER,
 	TOKEN_FLOAT,

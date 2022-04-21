@@ -3,7 +3,7 @@
 string Printer::print(Symbol* symbol)
 {
 	_stream = stringstream();
-	_args = new vector<ExprNode*>();
+	_args_stack = stack<vector<ExprNode*>>();
 
 	PRINT(symbol->get_ident() + " = ");
 	symbol->body->accept(this);
@@ -73,22 +73,22 @@ VISIT(VariableNode)
 {
 	PRINT("(");
 	if(node->_symbol->id >= 0) node->_symbol->body->accept(this);
-	else (*_args)[-node->_symbol->id - 1]->accept(this);
+	else _args_stack.top()[-node->_symbol->id - 1]->accept(this);
 	PRINT(")");
 }
 
 VISIT(CallNode)
 {
 	// set args
-	_args->clear();
-	for(auto a : node->_args) _args->push_back(a);
+	_args_stack.push({});
+	for(auto a : node->_args) _args_stack.top().push_back(a);
 
 	// visit body
 	PRINT("(");
 	node->_symbol->body->accept(this);
 	PRINT(")");
 
-	_args->clear();
+	_args_stack.pop();
 }
 
 VISIT(ActionNode)
@@ -101,8 +101,6 @@ VISIT(ActionNode)
 		if(a != node->_args.back()) PRINT(", ");
 	}
 	PRINT("]");
-
-	_args->clear();
 }
 
 #undef VISIT

@@ -61,6 +61,20 @@ HANDLER(printb) // print string
 	return 0;
 }
 
+HANDLER(int) // cast to int
+{
+	//
+	return (int)args[0];
+}
+
+HANDLER(get) // gets a double
+{
+	BoundValue val = GET_BOUND_VALUE(args[0]);
+	if(val.type != BoundValue::NUMBER)
+		FMT_ERROR("Cannot use non-numeric bound value %s.", val.to_string(true).c_str());
+	return val.as.num;
+}
+
 #undef HANDLER
 #pragma endregion
 
@@ -68,8 +82,9 @@ HANDLER(printb) // print string
 #define HANDLER(name, argc) { #name, argc, &handler_##name }
 vector<Action> actions = {
 	HANDLER(print, 1),
-	HANDLER(print, 1),
 	HANDLER(printb, 1),
+	HANDLER(int, 1),
+	HANDLER(get, 1),
 };
 #undef HANDLER
 
