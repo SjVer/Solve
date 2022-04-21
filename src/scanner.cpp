@@ -4,7 +4,7 @@
 
 Scanner::Scanner() {}
 
-Scanner::Scanner(string* filename, const char *source)
+Scanner::Scanner(std::string* filename, const char *source)
 {
 	_filename = filename;
 	_src_start = source;
@@ -125,7 +125,24 @@ Token Scanner::number()
 		}
 		return makeToken(TOKEN_INTEGER);
 	}
+}
 
+Token Scanner::string()
+{
+	while (peek() != '"' && !isAtEnd())
+	{
+		if (peek() == '\n')
+			_line++;
+		else if (peek() == '\\')
+			advance();
+		advance();
+	}
+
+	if (isAtEnd()) return errorToken("Unterminated string.");
+
+	// The closing quote.
+	advance();
+	return makeToken(TOKEN_STRING);
 }
 
 Token Scanner::identifier()
@@ -204,16 +221,19 @@ Token Scanner::scanToken()
 
 		case '(': return makeToken(TOKEN_LEFT_PAREN);
 		case ')': return makeToken(TOKEN_RIGHT_PAREN);
+		case '[': return makeToken(TOKEN_LEFT_B_BRACE);
+		case ']': return makeToken(TOKEN_RIGHT_B_BRACE);
 		case ',': return makeToken(TOKEN_COMMA);
 		case '+': return makeToken(TOKEN_PLUS);
-		case '-': return makeToken(TOKEN_MINUS);
 		case '*': return makeToken(TOKEN_STAR);
+		case '@': return makeToken(TOKEN_AT);
 
 		// two-character
 		case '=': return makeToken(match('=') ? TOKEN_EQUAL_EQUAL	: TOKEN_EQUAL);
 		case '/': return makeToken(match('=') ? TOKEN_SLASH_EQUAL	: TOKEN_SLASH);
 		case '<': return makeToken(match('=') ? TOKEN_LESS_EQUAL	: TOKEN_LESS);
 		case '>': return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+		case '-': return makeToken(match('>') ? TOKEN_ARROW : TOKEN_MINUS);
 
 		case '\n':
 		{
@@ -221,67 +241,12 @@ Token Scanner::scanToken()
 			while(peek() == '\n') advance();
 			return makeToken(TOKEN_NEWLINE);
 		}
+
+		case '"': return string();
 	}
 
 	char* errstr = new char[25]; // just above what's needed
 	strcpy(errstr, "Unexpected character 'X'.");
 	errstr[strlen(errstr) - 3] = c;
 	return errorToken(errstr);
-}
-
-// =========================
-
-char *get_tokentype_str(TokenType type)
-{
-	switch(type)
-	{
-		// Single-character tokens.
-		case TOKEN_LEFT_PAREN: return "LEFT_PAREN";
-		case TOKEN_RIGHT_PAREN: return "RIGHT_PAREN";
-		// case TOKEN_LEFT_BRACE: return "LEFT_BRACE";
-		// case TOKEN_RIGHT_BRACE: return "RIGHT_BRACE";
-		// case TOKEN_LEFT_B_BRACE: return "LEFT_B_BRACE";
-		// case TOKEN_RIGHT_B_BRACE: return "RIGHT_B_BRACE";
-		case TOKEN_SLASH: return "SLASH";
-		case TOKEN_COMMA: return "COMMA";
-		// case TOKEN_SEMICOLON: return "SEMICOLON";
-		case TOKEN_STAR: return "STAR";
-		// case TOKEN_MODULO: return "MODULO";
-
-		// One or two character tokens.
-		case TOKEN_PLUS: return "PLUS";
-		case TOKEN_MINUS: return "MINUS";
-		case TOKEN_GREATER: return "GREATER";
-		case TOKEN_LESS: return "LESS";
-		case TOKEN_EQUAL: return "EQUAL";
-
-		// Multi-character tokens
-		case TOKEN_EQUAL_EQUAL: return "EQUAL_EQUAL";
-		case TOKEN_SLASH_EQUAL: return "SLASH_EQUAL";
-		case TOKEN_GREATER_EQUAL: return "GREATER_EQUAL";
-		case TOKEN_LESS_EQUAL: return "LESS_EQUAL";
-
-		// Literals.
-		case TOKEN_IDENTIFIER: return "IDENTIFIER";
-		case TOKEN_INTEGER: return "INTEGER";
-		case TOKEN_FLOAT: return "FLOAT";
-
-		// misc.
-		case TOKEN_NEWLINE: return "NEWLINE";
-		case TOKEN_ERROR: return "ERROR";
-		case TOKEN_EOF: return "EOF";
-	}
-}
-
-void print_tokens_from_src(const char *src)
-{
-	Scanner scanner(new string("<none>"), src);
-	
-	Token token;
-	do {
-		token = scanner.scanToken();
-		printf("%d: \"%.*s\" \t\t-> %s\n\n",
-			token.line, token.length, token.start, get_tokentype_str(token.type));
-
-	} while (token.type != TOKEN_EOF);
 }

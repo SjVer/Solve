@@ -5,3 +5,4 @@ VISIT(GroupingNode);
 VISIT(NumberNode);
 VISIT(VariableNode);
 VISIT(CallNode);
+VISIT(ActionNode);

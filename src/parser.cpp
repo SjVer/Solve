@@ -147,7 +147,7 @@ void Parser::set_symbol(Symbol symbol)
 	// find last symbol with same name and get its ID
 	if(symbol.id == 0)
 	{
-		for(auto s = _symbols.rbegin(); s != _symbols.rend(); s++)
+		for(auto s = _env.symbols.rbegin(); s != _env.symbols.rend(); s++)
 			if((*s)->target.name == symbol.target.name)
 			{
 				symbol.id = (*s)->id + 1;
@@ -156,7 +156,7 @@ void Parser::set_symbol(Symbol symbol)
 	}
 
 	Symbol* symptr = new Symbol(symbol);
-	if(symbol.id >= 0) _symbols.push_back(symptr);
+	if(symbol.id >= 0) _env.symbols.push_back(symptr);
 	_current_scope.symbols[symbol.target.name] = symptr;
 
 	#ifdef DEBUG
@@ -212,7 +212,46 @@ void Parser::scope_down()
 	// 		ss.first.c_str(), ss.second->get_ident().c_str());
 }
 
-// ===================== expressions ====================
+// ===================== some shit -====================
+
+void Parser::bind()
+{
+	uint addr; // get addr
+	{
+		int base = 0;
+		string tok = PREV_TOKEN_STR;
+		
+			 if(tok.size() > 2 && tolower(tok[1]) == 'b') base = 2;
+		else if(tok.size() > 2 && tolower(tok[1]) == 'c') base = 8;
+		else if(tok.size() > 2 && tolower(tok[1]) == 'x') base = 16;
+		else base = 10;
+
+		addr = strtol(tok.c_str() + (base != 10 ? 2 : 0), NULL, base);
+	}
+
+	if(!consume(TOKEN_ARROW, "Expected '->' after bind address.")) return;		
+
+	BoundValue val; // get value
+	{
+		if(match(TOKEN_INTEGER) || match(TOKEN_FLOAT))
+		{
+			NumberNode* numnode = number();
+			val.as.num = numnode->_value;
+			val.type = BoundValue::NUMBER;
+			delete numnode;
+		}
+		else if(match(TOKEN_STRING))
+		{
+			string str = tools::escstr(string(_previous.start + 1, _previous.length - 2));
+			val.as.str = (char*)str.c_str();
+			printf("\"%s\"", val.as.str);
+			val.type = BoundValue::STRING;
+		}
+		else error_at_current("Expected bindable value.");
+	}
+
+	_env.bindings[addr] = val;
+}
 
 void Parser::assignment()
 {
@@ -254,6 +293,8 @@ void Parser::assignment()
 
 	DEBUG_PRINT_F_MSG("assigned '%s'", target.name.c_str());
 }
+
+// ===================== expressions ====================
 
 ExprNode* Parser::expression()
 {
@@ -333,7 +374,7 @@ ExprNode* Parser::unary()
 ExprNode* Parser::primary()
 {
 	// literals
-	if(match(TOKEN_INTEGER) || match(TOKEN_FLOAT)) return literal();
+	if(match(TOKEN_INTEGER) || match(TOKEN_FLOAT)) return number();
 
 	// grouping
 	else if(match(TOKEN_LEFT_PAREN))
@@ -351,13 +392,16 @@ ExprNode* Parser::primary()
 		else return variable();
 	}
 
+	// actions
+	else if(match(TOKEN_AT)) return action();
+
 	error_at_current("Expected expression.");
 	return nullptr;
 }
 
 // ===================== primaries =====================
 
-NumberNode* Parser::literal()
+NumberNode* Parser::number()
 {
 	switch(_previous.type)
 	{
@@ -453,17 +497,40 @@ CallNode* Parser::call()
 	return symbol->invalid ? nullptr : new CallNode(tok, symbol, args);
 }
 
+ActionNode* Parser::action()
+{
+	CONSUME_OR_RET_NULL(TOKEN_IDENTIFIER, "Expected identifier after '@'.");
+	Token tok = _previous;
+	Action* action = get_action(PREV_TOKEN_STR);
+
+	if(!action) { error("Action does not exist."); return nullptr; }
+
+	CONSUME_OR_RET_NULL(TOKEN_LEFT_B_BRACE, "Expected '['.");
+
+	vector<ExprNode*> args;
+	if(!check(TOKEN_RIGHT_B_BRACE)) do args.push_back(expression()); while(match(TOKEN_COMMA));
+
+	if(args.size() != action->arity)
+	{
+		error_at(&tok, tools::fstr("Expected %d argument%s, but %d were given.",
+			action->arity, action->arity == 1 ? "" : "s", args.size()));
+		return nullptr;
+	}
+
+	CONSUME_OR_RET_NULL(TOKEN_RIGHT_B_BRACE, "Expected ']' after arguments.");
+	return new ActionNode(tok, action, args);
+}
+
 // ======================= misc. =======================
 
-Status Parser::parse(string infile, CCP source, vector<Symbol*>* symbols_dest)
+Status Parser::parse(string infile, CCP source, Environment* env)
 {
-	// print_tokens_from_src(source);
-
 	// set members
 	_scanner = Scanner(&infile, source);
-	_symbols = vector<Symbol*>();
 	_scope_stack = vector<Scope>();
 	_current_scope = Scope{map<string, Symbol*>()};
+
+	_env = {};
 
 	_had_error = false;
 	_panic_mode = false;
@@ -474,13 +541,14 @@ Status Parser::parse(string infile, CCP source, vector<Symbol*>* symbols_dest)
 	advance();
 	while (!is_at_end())
 	{
-		assignment();
+		if(match(TOKEN_INTEGER)) bind();
+		else assignment();
 		// if(_panic_mode) synchronize();
 	}
 
 	DEBUG_PRINT_NL();
 	DEBUG_PRINT_MSG("Parsing complete!");
 	
-	*symbols_dest = _symbols;
+	*env = _env;
 	return _had_error ? STATUS_PARSE_ERROR : STATUS_SUCCESS;
 }

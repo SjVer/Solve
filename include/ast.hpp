@@ -17,6 +17,7 @@ class GroupingNode;
 class NumberNode;
 class VariableNode;
 class CallNode;
+class ActionNode;
 
 // visitor class
 class Visitor
@@ -120,6 +121,18 @@ class CallNode: public ExprNode
 	ACCEPT
 
 	Symbol* _symbol;
+	vector<ExprNode*> _args;
+};
+
+class ActionNode: public ExprNode
+{
+	public:
+
+	ActionNode(Token token, Action* action, vector<ExprNode*> args):
+		ExprNode(token), _action(action), _args(args) {}
+	ACCEPT
+
+	Action* _action;
 	vector<ExprNode*> _args;
 };
 

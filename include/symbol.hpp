@@ -2,6 +2,7 @@
 #define SYMBOL_H
 
 #include "pch"
+#include "actions.hpp"
 
 class ExprNode;
 
@@ -30,5 +31,12 @@ typedef struct _Symbol
 		return target.name + idstr;
 	}
 } Symbol;
+
+
+typedef struct _Environment
+{
+	vector<Symbol*> symbols;
+	map<uint, BoundValue> bindings;
+} Environment;
 
 #endif

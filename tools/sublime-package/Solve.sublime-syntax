@@ -15,6 +15,7 @@ variables:
   binary: '\b0b[0-1]+\b'
   octal: '\b0c[0-7]+\b'
   hexadecimal: '\b0x[0-9a-fA-F]+\b'
+  integer: '\b[0-9]\b|{{binary}}|{{octal}}|{{hexadecimal}}'
   number: '{{decimal}}|{{binary}}|{{octal}}|{{hexadecimal}}'
 
 contexts:
@@ -23,22 +24,20 @@ contexts:
 
   main:
     - include: comments
-    - include: declaration
-
+    - include: expression
     - include: invalids
-
-
 
   expression:
     - include: comments
 
-    # - include: declaration
+    - include: declaration
+    - include: bind
 
     - include: operator
     - include: number
     - include: call
     - include: variable
-
+    - include: action
 
   declaration:
 
@@ -47,7 +46,6 @@ contexts:
       captures:
         1: entity.name.function.slv
         2: keyword.definition.variable.slv
-      push: expression
 
     # functions
     - match: '({{ident}})\s*(\()(?=.*\)\s*=)'
@@ -62,8 +60,13 @@ contexts:
       escape_captures:
         1: punctuation.section.parens.end.slv
         2: keyword.definition.function.slv
-      push: expression
 
+  bind:
+    - match: '({{integer}})\s*(->)'
+      captures:
+        1: constant.language.slv
+        2: keyword.declaration.bind.slv
+      push: bind-value
 
   operator:
     - match: ==|/=
@@ -82,7 +85,7 @@ contexts:
       scope: keyword.operator.arithmetic.slv
 
   number:
-    - match: \b{{number}}\b
+    - match: '{{number}}'
       scope: constant.numeric.slv
 
   call:
@@ -101,6 +104,27 @@ contexts:
   variable:
     - match: '({{ident}})'
       scope: variable.other.slv
+
+  action:
+    - match: '@\s*{{ident}}'
+      scope: keyword.control.slv
+      push:
+        - match: \[
+          scope: punctuation.section.brackets.begin.slv
+          set:
+
+          - include: expression
+
+          - match: \,
+            scope: punctuation.separator.sequence.slv
+
+          - match: \]
+            scope: punctuation.section.brackets.end.slv
+            pop: true
+
+          - include: invalids
+        - include: invalids
+
 
 
   invalids:
@@ -122,3 +146,51 @@ contexts:
         - meta_scope: comment.line.slv
         - match: $\n?
           pop: true
+
+
+
+  bind-value:
+    - include: bind-number
+    - include: bind-string-char
+    - include: invalids
+
+  bind-number:
+    - match: '{{number}}'
+      scope: constant.numeric.slv
+      pop: true
+
+  bind-string-char:
+    - match: '\"'
+      set:
+        - meta_scope: string.quoted.double.slv
+        - match: '\"'
+          pop: true
+        - include: escaped-char
+        - include: format-specifier
+
+    - match: "'"
+      set:
+        - meta_scope: string.quoted.single.slv
+        - match: "'"
+          pop: true
+        - include: escaped-char
+
+
+  escaped-char:
+    # - match: \\(?:\\|[abefnrtv\'"?]|[0-3][0-9]{0,2}|[4-7][0-9]?|x[a-fA-F0-9]+|u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8})
+    - match: \\(?:a|b|e|f|n|r|t|v|\\|\'|\"|0)
+      scope: constant.character.escape.c
+    - match: \\.
+      scope: invalid.illegal.unknown-escape.c
+
+  format-specifier:
+      - match: |-
+          (?x)%
+            (\d+\$)?                                      # field (argument #)
+            [#0\- +']*                                    # flags
+            [,;:_]?                                       # separator character (AltiVec)
+            ((-?\d+)|\*(-?\d+\$)?)?                       # minimum field width
+            (\.((-?\d+)|\*(-?\d+\$)?)?)?                  # precision
+            (hh|h|ll|l|j|t|z|q|L|vh|vl|v|hv|hl)?          # length modifier
+            (\[[^\]]+\]|[am]s|[diouxXDOUeEfFgGaACcSspn%]) # conversion type
+        scope: constant.other.placeholder.slv

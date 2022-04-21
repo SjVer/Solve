@@ -134,6 +134,18 @@ VISIT(CallNode)
 	}
 }
 
+VISIT(ActionNode)
+{
+	int thisnode = ADD_NODE(tools::fstr("@%s[]", node->_action->name.c_str()).c_str());
+
+	for(auto& subnode : node->_args)
+	{
+		// node id will be _nodecount
+		CONNECT_NODES(thisnode, _nodecount);
+		subnode->accept(this);
+	}
+}
+
 #undef ADD_NODE
 #undef CONNECT_NODES
 #undef VISIT

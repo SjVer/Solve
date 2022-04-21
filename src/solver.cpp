@@ -105,4 +105,16 @@ VISIT(CallNode)
 	_args.clear();
 }
 
+VISIT(ActionNode)
+{
+	double* args = new double[node->_args.size()];
+	for(int i = 0; i < node->_args.size(); i++)
+	{
+		node->_args[i]->accept(this);
+		args[i] = pop();
+	}
+
+	push(node->_action->handler(args));
+}
+
 #undef VISIT

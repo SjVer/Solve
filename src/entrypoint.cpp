@@ -104,12 +104,12 @@ int main(int argc, char **argv)
 
 	Status status = STATUS_SUCCESS;
 	CCP source = strdup(tools::readf(arguments.infile).c_str());
-	vector<Symbol*> symbols;
+	Environment env = {{}, {}};
 
 
 	// parse program
 	Parser parser = Parser();
-	status = parser.parse(arguments.infile, source, &symbols);
+	status = parser.parse(arguments.infile, source, &env);
 	ABORT_IF_UNSUCCESSFULL();
 
 
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	if(arguments.verbose)
 	{
 		MSG("Defined symbols:");
-		for(auto s : symbols)
+		for(auto s : env.symbols)
 		{
 			string msg = "    " + s->get_ident();
 			if(s->target.has_params)
@@ -128,6 +128,13 @@ int main(int argc, char **argv)
 			}
 			MSG(msg);
 		}
+
+		MSG("Bindings:");
+		for(auto b : env.bindings)
+		{
+			string msg = tools::fstr("    0x%02x -> ", b.first);
+			MSG(msg + b.second.to_string());
+		}
 	}
 
 
@@ -137,7 +144,7 @@ int main(int argc, char **argv)
 		ASTVisualizer viz = ASTVisualizer();
 
 		viz.init();
-		for(auto s : symbols) viz.visualize(string(arguments.infile) + ".svg", s);
+		for(auto s : env.symbols) viz.visualize(string(arguments.infile) + ".svg", s);
 		viz.finalize();
 
 		MSG("AST image written to \"" + string(arguments.infile) + ".svg\".");
@@ -148,7 +155,7 @@ int main(int argc, char **argv)
 	// find symbol to solve
 	// TODO: allow user-specified main symbol
 	Symbol* to_solve = nullptr;
-	for(auto it = symbols.rbegin(); it != symbols.rend(); it++)
+	for(auto it = env.symbols.rbegin(); it != env.symbols.rend(); it++)
 	{
 		Symbol* s = *it;
 		if(s->target.name == "main" && !s->target.has_params)
@@ -162,11 +169,10 @@ int main(int argc, char **argv)
 	{
 		Printer printer = Printer();
 		string out = printer.print(to_solve);
-		// MSG("Expanded expression: " << endl << endl << "    " << out << endl);
-		MSG("Expanded expression: ");
-		MSG("");
+		MSG("Substituted expression: ");
+		// MSG("");
 		MSG("    " << out);
-		MSG("");
+		// MSG("");
 	}
 
 

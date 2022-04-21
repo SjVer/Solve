@@ -1,3 +1,8 @@
-f(x) = 2 * x
+0x0 -> "Hello World!\n"
+0x1 -> 0xff
 
-main = f(1)
+a = 3
+
+f(x) = 2 * x + a
+
+main = @printd[f(3)]

@@ -14,7 +14,7 @@ using namespace std;
 class Parser
 {
 public:
-	Status parse(string infile, CCP source, vector<Symbol*>* symbols_dest);
+	Status parse(string infile, CCP source, Environment* env);
 
 private:
 
@@ -46,7 +46,9 @@ private:
 	void scope_up();
 	void scope_down();
 
+	void bind();
 	void assignment();
+
 	ExprNode* expression();
 		ExprNode* equality();
 		ExprNode* comparison();
@@ -54,9 +56,10 @@ private:
 		ExprNode* factor();
 		ExprNode* unary();
 		ExprNode* primary();
-			NumberNode* literal();
+			NumberNode* number();
 			VariableNode* variable();
 			CallNode* call();
+			ActionNode* action();
 
 	// members
 
@@ -64,7 +67,7 @@ private:
 	Token _current;
 	Token _previous;
 
-	vector<Symbol*> _symbols;
+	Environment _env;
 	Scope _current_scope;
 	vector<Scope> _scope_stack;
 

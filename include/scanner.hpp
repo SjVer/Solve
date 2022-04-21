@@ -12,8 +12,8 @@ typedef enum
 	TOKEN_RIGHT_PAREN,
 	// TOKEN_LEFT_BRACE,
 	// TOKEN_RIGHT_BRACE,
-	// TOKEN_LEFT_B_BRACE,
-	// TOKEN_RIGHT_B_BRACE,
+	TOKEN_LEFT_B_BRACE,
+	TOKEN_RIGHT_B_BRACE,
 	TOKEN_EQUAL,
 	TOKEN_COMMA,
 	TOKEN_PLUS,
@@ -29,19 +29,20 @@ typedef enum
 	TOKEN_SLASH_EQUAL,
 	TOKEN_GREATER_EQUAL,
 	TOKEN_LESS_EQUAL,
+	TOKEN_ARROW,
 
 	// Literals.
+	TOKEN_AT,
 	TOKEN_IDENTIFIER,
 	TOKEN_INTEGER,
 	TOKEN_FLOAT,
+	TOKEN_STRING,
 
 	// misc.
 	TOKEN_NEWLINE,
 	TOKEN_ERROR,
 	TOKEN_EOF
 } TokenType;
-
-char *get_tokentype_str(TokenType type);
 
 typedef struct
 {
@@ -57,7 +58,7 @@ class Scanner
 {
 public:
 	Scanner();
-	Scanner(string* filename, const char *source);
+	Scanner(std::string* filename, const char *source);
 	Token scanToken();
 	int getScannedLength();
 
@@ -67,7 +68,7 @@ private:
 	const char *_current;
 	int _line;
 
-	string* _filename;
+	std::string* _filename;
 
 	bool isAtEnd();
 	bool isDigit(char c);
@@ -79,11 +80,10 @@ private:
 	Token makeToken(TokenType type);
 	Token errorToken(const char *message);
 	Token number();
+	Token string();
 	Token identifier();
 	void skipWhitespaces();
 };
-
-void print_tokens_from_src(const char *src);
 
 /*
 static uint get_token_col(Token* token, int tab_width = -1)
