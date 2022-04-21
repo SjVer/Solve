@@ -1,10 +1,11 @@
 #include "solver.hpp"
 
-Status Solver::solve(Symbol* symbol)
+Status Solver::solve(Environment* env, Symbol* symbol)
 {
 	// reset result real quick
 	result = nan("<no result>");
 	_args = vector<ExprNode*>();
+	_env = env;
 
 	symbol->body->accept(this);
 	result = pop();
@@ -114,7 +115,7 @@ VISIT(ActionNode)
 		args[i] = pop();
 	}
 
-	push(node->_action->handler(args));
+	push(node->_action->handler(&node->_token, _env, args));
 }
 
 #undef VISIT

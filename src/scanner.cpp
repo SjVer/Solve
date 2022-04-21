@@ -165,10 +165,10 @@ void Scanner::skipWhitespaces()
 		case '\t':
 			advance();
 			break;
-		// case '\n':
-		// 	_line++;
-		// 	advance();
-		// 	break;
+		case '\n':
+			_line++;
+			advance();
+			break;
 		case ';':
 			if (peekNext() == ';')
 			{
@@ -187,8 +187,7 @@ void Scanner::skipWhitespaces()
 			}
 			else
 			{
-				while (peek() != '\n' && !isAtEnd())
-					advance();
+				while (peek() != '\n' && !isAtEnd()) advance();
 			}
 			break;
 		default:
@@ -235,12 +234,12 @@ Token Scanner::scanToken()
 		case '>': return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
 		case '-': return makeToken(match('>') ? TOKEN_ARROW : TOKEN_MINUS);
 
-		case '\n':
-		{
-			_line++;
-			while(peek() == '\n') advance();
-			return makeToken(TOKEN_NEWLINE);
-		}
+		// case '\n':
+		// {
+		// 	_line++;
+		// 	while(peek() == '\n') advance();
+		// 	return makeToken(TOKEN_NEWLINE);
+		// }
 
 		case '"': return string();
 	}
@@ -249,4 +248,25 @@ Token Scanner::scanToken()
 	strcpy(errstr, "Unexpected character 'X'.");
 	errstr[strlen(errstr) - 3] = c;
 	return errorToken(errstr);
+}
+
+uint get_token_col(Token* token, uint tab_width)
+{
+	if(token->type == TOKEN_ERROR) return 0;
+	
+	// get offset of token (first char)
+	ptrdiff_t token_offset = token->start - token->source;
+
+	// find first newline before token
+	ptrdiff_t tok_ln_begin = token_offset;
+	while(tok_ln_begin > 0 && token->source[tok_ln_begin] != '\n') tok_ln_begin--;
+	tok_ln_begin++; // skip newline itself
+
+	ptrdiff_t col = (token_offset - tok_ln_begin);
+
+	// if tab width set account for that
+	for(int i = -col; tab_width >= 0 && i < 0; i++)
+		if(token->start[i] == '\t') col += tab_width;
+	
+	return col >= 0 ? col : 0;
 }

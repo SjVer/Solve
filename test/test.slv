@@ -5,4 +5,4 @@ a = 3
 
 f(x) = 2 * x + a
 
-main = @printd[f(3)]
+main = @printb[15]

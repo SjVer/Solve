@@ -97,12 +97,12 @@ remake: clean $(APP)
 
 .PHONY: test
 test: $(APP)
-	@printf "============= Running \"$(APP)\" =============\n\n"
-	@$(APP) test/test.slv -v $(args)
+	@printf "============= Running \"$(APP)\" =============\n"
+	@$(APP) test/test.slv $(args)
 
 .PHONY: valgrind
 valgrind: debug $(APP)
-	@printf "============ Running \"valgrind $(APP) test/test.slv\" ============\n\n"
+	@printf "============ Running \"valgrind $(APP) test/test.slv\" ============\n"
 	@valgrind $(APP) test/test.slv $(args)
 
 ############################################################################

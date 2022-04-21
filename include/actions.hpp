@@ -2,13 +2,14 @@
 #define ACTIONS_H
 
 #include "common.hpp"
+#include "scanner.hpp"
 #include "pch"
 
 typedef struct _Action
 {
 	string name;
 	uint arity;
-	double (*handler)(double*);
+	double (*handler)(Token*, struct _Environment*, double*);
 } Action;
 
 typedef struct _BoundValue
@@ -25,15 +26,7 @@ typedef struct _BoundValue
 		STRING,
 	} type;
 
-	string to_string()
-	{
-		switch(type)
-		{
-		case NUMBER: return ::to_string(as.num);
-		case STRING: return string(as.str);
-		default: return "<invalid bound value>";
-		}
-	}
+	string to_string(bool debug);
 } BoundValue;
 
 extern vector<Action> actions;

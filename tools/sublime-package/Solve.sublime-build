@@ -4,14 +4,14 @@
 	"word_wrap": false,
 	"kill_previous": true,
 
-	// "syntax": "Packages/ANSIescape/ANSI.sublime-syntax",
-	// "target": "ansi_color_build",
+	"syntax": "Packages/ANSIescape/ANSI.sublime-syntax",
+	"target": "ansi_color_build",
 
-	// "env": {"CLICOLOR_FORCE": "1"},
+	"env": {"CLICOLOR_FORCE": "1"},
 
-	// "cmd": ["~/Coding/Languages/Evi-Lang/bin/evi $file -o $file_path/$file_base_name && $file_path/$file_base_name; rm $file_path/$file_base_name"],
+	"cmd": ["~/Coding/Languages/Solve/bin/solve $file"],
 
-	"file_regex": "^[ ]File \"(...?)\", line ([0-9]*)",
+	"file_regex": "^\\[(.*):([0-9]+)?:([0-9]+)?\\] (?:.+): (.+)",
 	"selector": "source.slv",
 	"file_patterns": ["*.slv"]
 }

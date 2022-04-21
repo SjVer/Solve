@@ -97,15 +97,16 @@ void ErrorDispatcher::print_line_marked(uint line_no, string line, CCP color)
 
 void ErrorDispatcher::__dispatch(CCP color, CCP prompt, CCP message)
 {
-	cerr << tools::fstr("[evi] %s%s" COLOR_NONE ": %s",
+	cerr << tools::fstr("[solve] %s%s" COLOR_NONE ": %s",
 						color, prompt, message) << endl;
 }
 
 void ErrorDispatcher::__dispatch_at_token(CCP color, Token* token, CCP prompt, CCP message)
 {
-	fprintf(stderr, "[%s:%d] %s%s" COLOR_NONE ": %s\n",
+	fprintf(stderr, "[%s:%d:%d] %s%s" COLOR_NONE ": %s\n",
 			token->file->c_str(),
-			token->line, color, prompt, message);
+			token->line, get_token_col(token) + 1, 
+			color, prompt, message);
 }
 
 // if line == 0 lineno is omitted. likewise with filename

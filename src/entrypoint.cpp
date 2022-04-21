@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 		for(auto b : env.bindings)
 		{
 			string msg = tools::fstr("    0x%02x -> ", b.first);
-			MSG(msg + b.second.to_string());
+			MSG(msg + b.second.to_string(true));
 		}
 	}
 
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 
 	// solve
 	Solver solver = Solver();
-	status = solver.solve(to_solve);
+	status = solver.solve(&env, to_solve);
 	ABORT_IF_UNSUCCESSFULL();
 	if(arguments.verbose) { MSG("Result of solved expression: " << solver.result); }
 

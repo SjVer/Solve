@@ -13,7 +13,7 @@ class Solver: public Visitor
 {
 public:
 
-	Status solve(Symbol* symbol);
+	Status solve(Environment* env, Symbol* symbol);
 	double result;
 	
 private:
@@ -26,6 +26,7 @@ private:
 	double pop();
 	stack<double> _stack;
 
+	Environment* _env;
 	vector<ExprNode*> _args;
 };
 

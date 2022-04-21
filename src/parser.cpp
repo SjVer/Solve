@@ -242,9 +242,7 @@ void Parser::bind()
 		}
 		else if(match(TOKEN_STRING))
 		{
-			string str = tools::escstr(string(_previous.start + 1, _previous.length - 2));
-			val.as.str = (char*)str.c_str();
-			printf("\"%s\"", val.as.str);
+			val.as.str = strndup(_previous.start + 1, _previous.length - 2);
 			val.type = BoundValue::STRING;
 		}
 		else error_at_current("Expected bindable value.");
@@ -526,7 +524,7 @@ ActionNode* Parser::action()
 Status Parser::parse(string infile, CCP source, Environment* env)
 {
 	// set members
-	_scanner = Scanner(&infile, source);
+	_scanner = Scanner(new string(infile), source);
 	_scope_stack = vector<Scope>();
 	_current_scope = Scope{map<string, Symbol*>()};
 

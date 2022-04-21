@@ -3,6 +3,7 @@
 
 #include "pch"
 #include "actions.hpp"
+#include "scanner.hpp"
 
 class ExprNode;
 
