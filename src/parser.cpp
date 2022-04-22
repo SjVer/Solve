@@ -196,23 +196,8 @@ Symbol* Parser::get_symbol(string name, int id)
 			if (s->symbols.find(name) != s->symbols.end())
 				return s->symbols.at(name);
 	}
-	else
-	{
-		for(auto s : _current_scope.symbols)
-		{
-			cout << s.second->id << " vs " << id << endl;
-			cout << s.first << " vs " << name << endl << endl;
-			if(s.second->id == id && s.first == name) return s.second;
-		}
-
-		for (auto ss = _scope_stack.rbegin(); ss != _scope_stack.rend(); ss++)
-			for(auto s : ss->symbols)
-			{
-				cout << s.second->id << " vs " << id << endl;
-				cout << s.first << " vs " << name << endl << endl;
-				if(s.second->id == id && s.first == name) return s.second;
-			}
-	}
+	else for(auto s : _env.symbols)
+		if(s->id == id && s->target.name == name) return s;
 
 	return nullptr;
 }

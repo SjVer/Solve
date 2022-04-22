@@ -5,7 +5,7 @@
 # Compiler settings - Can be customized.
 CC = clang++
 
-MUTE = write-strings varargs # sign-compare unused-function comment dangling-gsl unknown-warning-option c++17-extensions
+MUTE = write-strings varargs delete-non-abstract-non-virtual-dtor
 DEFS = 
 CXXFLAGS = -std=c++14 -Wall $(addprefix -Wno-,$(MUTE)) $(addprefix -D,$(DEFS)) #-fsanitize=address
 
